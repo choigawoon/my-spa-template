@@ -53,8 +53,10 @@ Stage 3: MSA 구조 (nginx 리버스 프록시)
 
 #### 특징
 - ✅ **백엔드 서버 불필요**: MSW가 브라우저에서 모든 API 요청 처리
+- ✅ **Prisma 스키마 기반**: 실제 DB 없이도 Prisma 스키마 → Zod 자동 생성 → MSW 목업
+- ✅ **타입 안전성**: Prisma 모델 스펙으로 프론트엔드 타입 자동 생성
 - ✅ **빠른 개발**: 데이터베이스 설정 없이 즉시 개발 시작
-- ✅ **API 스펙 정의**: Zod 스키마로 API 인터페이스 명확히 정의
+- ✅ **API 스펙 정의**: Prisma 스키마를 단일 소스로 사용해 Zod/Pydantic 동기화
 - ✅ **실제 백엔드와 동일한 형식**: FastAPI 스타일 응답으로 나중에 전환 용이
 
 #### 설정
@@ -63,9 +65,65 @@ Stage 3: MSA 구조 (nginx 리버스 프록시)
 VITE_API_MODE=mock
 ```
 
+#### Prisma + Zod 통합 워크플로우
+
+**실제 DB 없이도 Prisma 스키마로 타입 안전한 개발:**
+
+```
+1. Prisma 스키마 작성 (prisma/schema.prisma)
+   ↓
+2. Zod 스키마 자동 생성 (prisma-zod-generator)
+   → src/lib/prisma-zod/** 에 생성
+   ↓
+3. MSW 핸들러에서 생성된 Zod 스키마 사용
+   → 타입 안전한 Mock 데이터
+   ↓
+4. 나중에 실제 DB 연결 시
+   → Prisma Client로 동일한 스키마 사용
+   → 프론트엔드 코드 변경 불필요
+```
+
+**예시:**
+```prisma
+// prisma/schema.prisma
+model Item {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  category    String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+```
+
+```typescript
+// 자동 생성된 src/lib/prisma-zod/Item.ts
+import { z } from 'zod'
+export const ItemSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  description: z.string(),
+  price: z.number(),
+  category: z.string(),
+  created_at: z.date(),
+  updated_at: z.date(),
+})
+```
+
+```typescript
+// src/mocks/handlers.ts
+import { ItemSchema } from '@/lib/prisma-zod/Item'
+
+// 생성된 Zod 스키마로 타입 안전한 Mock 데이터
+let items: z.infer<typeof ItemSchema>[] = [...]
+```
+
 #### 사용 시나리오
 - 프로토타이핑 및 초기 UI/UX 개발
 - 프론트엔드 개발자가 백엔드와 독립적으로 작업
+- Prisma 스키마로 DB 모델 설계 및 타입 생성
+- 실제 DB 없이도 Prisma 모델 스펙으로 개발
 - API 스펙 협의 및 문서화
 - 프론트엔드 단위 테스트
 
@@ -125,10 +183,13 @@ VITE_API_BASE_URL=http://localhost:8000
 
 #### 마이그레이션 단계
 1. FastAPI 백엔드 프로젝트 생성 (`BACKEND_ROADMAP.md` 참고)
-2. Prisma 스키마 작성 (MSW의 Zod 스키마 기반)
-3. FastAPI 라우트 구현
-4. 환경 변수 변경 (`VITE_API_MODE=real`)
-5. 프론트엔드 재시작
+2. **Prisma 스키마는 이미 작성됨** (Stage 1에서 작성)
+3. 실제 데이터베이스 연결 및 마이그레이션
+4. FastAPI 라우트 구현 (Prisma Client 사용)
+5. 환경 변수 변경 (`VITE_API_MODE=real`)
+6. 프론트엔드 재시작
+
+**중요:** Prisma 스키마는 Stage 1에서 이미 작성했으므로, Stage 2에서는 실제 DB 연결만 하면 됩니다.
 
 #### 사용 시나리오
 - 실제 데이터가 필요한 개발

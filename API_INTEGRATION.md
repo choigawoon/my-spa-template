@@ -325,6 +325,8 @@ export const handlers = [
 
 ### Schemas
 
+#### 방법 1: 수동 정의 (기존 방식)
+
 All request/response schemas are defined in `src/mocks/schemas.ts` using Zod:
 
 ```typescript
@@ -336,6 +338,54 @@ export const NewItemSchema = z.object({
 
 export type NewItem = z.infer<typeof NewItemSchema>
 ```
+
+#### 방법 2: Prisma에서 자동 생성 (권장)
+
+**실제 DB 없이도 Prisma 스키마 → Zod 자동 생성 가능:**
+
+1. **Prisma 스키마 작성:**
+   ```prisma
+   // prisma/schema.prisma
+   model Item {
+     id          Int      @id @default(autoincrement())
+     name        String
+     description String
+     price       Float
+     category    String
+     created_at  DateTime @default(now())
+     updated_at  DateTime @updatedAt
+   }
+   ```
+
+2. **Zod 스키마 자동 생성:**
+   ```bash
+   pnpm prisma generate
+   ```
+   - `src/lib/prisma-zod/Item.ts`에 자동 생성됨
+
+3. **MSW에서 사용:**
+   ```typescript
+   // src/mocks/handlers.ts
+   import { ItemSchema } from '@/lib/prisma-zod/Item'
+   import type { z } from 'zod'
+   
+   type Item = z.infer<typeof ItemSchema>
+   
+   let items: Item[] = [...]
+   
+   http.get('/api/items', () => {
+     const validated = z.array(ItemSchema).parse(items)
+     return HttpResponse.json({ items: validated })
+   })
+   ```
+
+**장점:**
+- ✅ Prisma 스키마가 단일 소스 (Single Source of Truth)
+- ✅ 실제 DB 없이도 타입 안전한 개발
+- ✅ 나중에 실제 DB 연결 시 프론트엔드 코드 변경 불필요
+- ✅ Prisma 모델 변경 시 Zod 스키마 자동 동기화
+
+**상세 가이드:** [`BACKEND_ROADMAP.md`](./BACKEND_ROADMAP.md) 참고
 
 ## Example: Creating a New API Service
 

@@ -83,6 +83,7 @@ pnpm dev            # http://localhost:3000
 
 ## Backend 계획
 - FastAPI + Prisma(py) 기반 백엔드로 확장 예정
+- **Prisma 스키마를 단일 소스로 사용**: 실제 DB 없이도 Prisma 스키마 → Zod 자동 생성 → MSW 목업 가능
 - Prisma schema를 단일 소스로 사용해 Zod/Pydantic 스키마를 동기화
 - 상세 절차는 `BACKEND_ROADMAP.md` 참고
 
@@ -95,8 +96,9 @@ pnpm dev            # http://localhost:3000
 이 템플릿의 핵심 가치는 **프론트엔드 코드 변경 없이 단계별로 확장 가능**하다는 점입니다:
 
 1. **Stage 1: MSW 모킹** - 백엔드 없이 풀스택처럼 개발
-   - MSW로 모든 API 모킹
-   - 데이터베이스 설정 불필요
+   - Prisma 스키마 작성 → Zod 자동 생성 → MSW 목업
+   - 실제 데이터베이스 설정 불필요
+   - Prisma 모델 스펙으로 타입 안전한 개발
    - 빠른 프로토타이핑
 
 2. **Stage 2: 단일 백엔드 + DB** - 실제 백엔드로 전환
