@@ -65,20 +65,8 @@ export const createUiSlice: StateCreator<UiSlice> = (set) => ({
 
   setTheme: (theme) => {
     set({ theme })
-    // Apply theme to document
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else if (theme === 'light') {
-      document.documentElement.classList.remove('dark')
-    } else {
-      // System theme
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      if (prefersDark) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
+    // Note: DOM updates are handled by the ThemeProvider component
+    // to avoid side effects during render phase
   },
 
   setLanguage: (language) => {
