@@ -22,4 +22,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      // Proxy /api requests to backend when VITE_API_MODE=real
+      // This allows frontend to make requests to /api/* without CORS issues
+      '/api': {
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        changeOrigin: true,
+        // If your backend doesn't use /api prefix, rewrite it
+        // rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })
