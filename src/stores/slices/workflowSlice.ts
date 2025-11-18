@@ -12,7 +12,7 @@
  * - No Context API or event bus needed - pure Zustand
  */
 
-import { StateCreator } from 'zustand'
+import type { StateCreator } from 'zustand'
 
 export type WorkStatus = 'idle' | 'running' | 'completed' | 'error'
 
