@@ -52,6 +52,7 @@ This is a modern React application built with TanStack Router, featuring:
 | **Build Tool** | Vite | 7.1.7 | Fast dev server & bundler |
 | **Language** | TypeScript | 5.7.2 | Type-safe JavaScript |
 | **Routing** | TanStack Router | 1.132.0 | File-based routing with code splitting |
+| **State Management** | Zustand | 5.0.8 | Lightweight state management with slice pattern |
 | **Styling** | Tailwind CSS | 4.0.6 | Utility-first CSS framework |
 | **UI Components** | shadcn/ui | latest | Pre-built component system |
 | **Icons** | Lucide React | 0.544.0 | Modern icon library |
@@ -97,7 +98,14 @@ yarn install # ❌ Wrong package manager
 │   ├── routes/                  # File-based routing (TanStack Router)
 │   │   ├── __root.tsx          # Root layout (persistent across routes)
 │   │   ├── index.tsx           # Home page (/)
+│   │   ├── zustand-test.tsx    # Zustand test page
 │   │   └── routeTree.gen.ts    # AUTO-GENERATED - DO NOT EDIT
+│   ├── stores/                  # Zustand state management
+│   │   ├── slices/             # Store slices (modular state)
+│   │   │   ├── apiSlice.ts    # API data management
+│   │   │   ├── uiSlice.ts     # UI state management
+│   │   │   └── taskSlice.ts   # Task management
+│   │   └── index.ts            # Combined store with middleware
 │   ├── lib/                     # Utility functions
 │   │   └── utils.ts            # cn() helper for class merging
 │   ├── main.tsx                # App entry point
@@ -122,6 +130,8 @@ yarn install # ❌ Wrong package manager
 
 - **Components**: `src/components/*.tsx`
 - **Routes**: `src/routes/*.tsx` (auto-discovered)
+- **Stores**: `src/stores/` (Zustand state management)
+  - **Slices**: `src/stores/slices/*.ts` (modular state)
 - **Utilities**: `src/lib/*.ts`
 - **Styles**: `src/styles.css` (global CSS + Tailwind)
 - **Types**: Inferred from TypeScript, no separate types folder
@@ -521,87 +531,336 @@ export const LoginForm = () => {
 
 ## State Management
 
-### Current Setup: Local State Only
+### Current Setup: Zustand with Slice Pattern
 
-No centralized state management library is installed. Use React's built-in hooks:
+This project uses **Zustand** for global state management with a modular slice pattern.
+
+**Installed**: `zustand@5.0.8`
+
+#### Store Architecture
+
+```
+src/stores/
+├── slices/
+│   ├── apiSlice.ts    # API data management (users, posts)
+│   ├── uiSlice.ts     # UI state (theme, sidebar, modals, notifications)
+│   └── taskSlice.ts   # Task management (CRUD, filtering, sorting)
+└── index.ts           # Combined store with middleware
+```
+
+### Basic Usage
 
 ```tsx
-import { useState } from 'react'
+import { useStore } from '@/stores'
 
-export const Counter = () => {
-  const [count, setCount] = useState(0)
+export const MyComponent = () => {
+  // Use entire store
+  const store = useStore()
+
+  // Use specific state (recommended for performance)
+  const users = useStore(state => state.users)
+  const theme = useStore(state => state.theme)
+  const tasks = useStore(state => state.tasks)
+
+  // Use actions
+  const addTask = useStore(state => state.addTask)
+  const setTheme = useStore(state => state.setTheme)
+
+  return <div>...</div>
+}
+```
+
+### Selector Hooks (Recommended)
+
+Use pre-built selector hooks for better performance:
+
+```tsx
+import { useUsers, useTheme, useTasks, useApiActions } from '@/stores'
+
+export const MyComponent = () => {
+  // State selectors
+  const users = useUsers()
+  const theme = useTheme()
+  const tasks = useTasks()
+
+  // Action selectors
+  const { fetchUsers, addUser } = useApiActions()
+
+  return <div>...</div>
+}
+```
+
+### Store Slices
+
+#### 1. API Slice (Data Management)
+
+Manages server-side data and API responses.
+
+```tsx
+import { useApiActions, useUsers } from '@/stores'
+
+export const UserList = () => {
+  const users = useUsers()
+  const { fetchUsers, addUser, removeUser } = useApiActions()
 
   return (
-    <button onClick={() => setCount(count + 1)}>
-      Count: {count}
-    </button>
+    <div>
+      <button onClick={fetchUsers}>Fetch Users</button>
+      {users.map(user => (
+        <div key={user.id}>
+          {user.name}
+          <button onClick={() => removeUser(user.id)}>Remove</button>
+        </div>
+      ))}
+    </div>
   )
 }
 ```
 
-### Recommended: TanStack Store (If Needed)
+**Available State:**
+- `users: User[]` - User list
+- `posts: Post[]` - Post list
+- `isLoading: boolean` - Loading state
+- `error: string | null` - Error message
 
-For complex client-side state:
+**Available Actions:**
+- `fetchUsers()` - Fetch users from API
+- `fetchPosts()` - Fetch posts from API
+- `addUser(user)` - Add new user
+- `removeUser(id)` - Remove user
+- `updateUser(id, updates)` - Update user
 
-```bash
-# Install TanStack Store
-pnpm add @tanstack/store @tanstack/react-store
-```
+#### 2. UI Slice (UI State)
 
-**Example Usage**:
+Manages client-side UI state like themes, modals, and notifications.
 
 ```tsx
-import { useStore } from '@tanstack/react-store'
-import { Store } from '@tanstack/store'
+import { useTheme, useUiActions } from '@/stores'
 
-// Create store
-const countStore = new Store(0)
-
-// Use in component
-export const Counter = () => {
-  const count = useStore(countStore)
+export const ThemeToggle = () => {
+  const theme = useTheme()
+  const { setTheme, addNotification } = useUiActions()
 
   return (
-    <button onClick={() => countStore.setState((n) => n + 1)}>
-      Count: {count}
-    </button>
+    <div>
+      <button onClick={() => setTheme('dark')}>Dark Mode</button>
+      <button onClick={() => addNotification('Hello!', 'success')}>
+        Show Notification
+      </button>
+    </div>
   )
 }
 ```
 
-**Derived State**:
+**Available State:**
+- `isSidebarOpen: boolean` - Sidebar open/closed
+- `theme: 'light' | 'dark' | 'system'` - Current theme
+- `language: 'en' | 'ko' | 'ja'` - Current language
+- `modal: { isOpen: boolean, title?: string, content?: string }` - Modal state
+- `notifications: Notification[]` - Notification list
+
+**Available Actions:**
+- `toggleSidebar()` - Toggle sidebar
+- `setSidebarOpen(isOpen)` - Set sidebar state
+- `setTheme(theme)` - Set theme (automatically updates DOM)
+- `setLanguage(language)` - Set language
+- `openModal(title, content)` - Open modal
+- `closeModal()` - Close modal
+- `addNotification(message, type)` - Add notification (auto-removes after 5s)
+- `removeNotification(id)` - Remove notification
+
+#### 3. Task Slice (Task Management)
+
+Manages tasks with filtering and sorting capabilities.
 
 ```tsx
-import { Derived } from '@tanstack/store'
+import { useTasks, useTaskActions } from '@/stores'
 
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
+export const TaskList = () => {
+  const tasks = useTasks() // Already filtered and sorted
+  const { addTask, deleteTask, setFilter, setTaskStatus } = useTaskActions()
+
+  return (
+    <div>
+      <button onClick={() => setFilter('completed')}>Show Completed</button>
+      {tasks.map(task => (
+        <div key={task.id}>
+          {task.title}
+          <button onClick={() => setTaskStatus(task.id, 'completed')}>
+            Complete
+          </button>
+          <button onClick={() => deleteTask(task.id)}>Delete</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+**Available State:**
+- `tasks: Task[]` - Task list
+- `selectedTaskId: number | null` - Currently selected task
+- `filter: 'all' | 'pending' | 'in_progress' | 'completed'` - Current filter
+- `sortBy: 'createdAt' | 'dueDate' | 'priority'` - Sort order
+
+**Available Actions:**
+- `addTask(task)` - Add new task
+- `updateTask(id, updates)` - Update task
+- `deleteTask(id)` - Delete task
+- `selectTask(id)` - Select task
+- `setFilter(filter)` - Set filter
+- `setSortBy(sortBy)` - Set sort order
+- `setTaskStatus(id, status)` - Update task status
+- `getFilteredTasks()` - Get filtered and sorted tasks
+- `getTaskById(id)` - Get task by ID
+
+### Middleware
+
+The store uses two Zustand middleware:
+
+#### 1. DevTools (Development Only)
+
+Redux DevTools integration for debugging:
+
+```tsx
+// Automatically enabled in development
+// Open Redux DevTools in browser to inspect state
+```
+
+#### 2. Persist
+
+LocalStorage persistence for UI preferences:
+
+```tsx
+// Automatically persists:
+// - theme
+// - language
+// - isSidebarOpen
+
+// Does NOT persist API data or tasks (intentional)
+```
+
+### Creating New Slices
+
+To add a new slice:
+
+**Step 1:** Create slice file in `src/stores/slices/`:
+
+```tsx
+// src/stores/slices/authSlice.ts
+import { StateCreator } from 'zustand'
+
+export interface AuthSlice {
+  user: User | null
+  isAuthenticated: boolean
+  login: (username: string, password: string) => Promise<void>
+  logout: () => void
+}
+
+export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
+  user: null,
+  isAuthenticated: false,
+
+  login: async (username, password) => {
+    // Login logic
+    set({ user: { username }, isAuthenticated: true })
+  },
+
+  logout: () => {
+    set({ user: null, isAuthenticated: false })
+  },
 })
-doubledStore.mount()
 ```
 
-### Context API for Shared State
+**Step 2:** Add to main store in `src/stores/index.ts`:
 
-For simple global state (theme, auth):
+```tsx
+import { createAuthSlice, AuthSlice } from './slices/authSlice'
+
+// Update Store type
+export type Store = ApiSlice & UiSlice & TaskSlice & AuthSlice
+
+// Add to store creation
+export const useStore = create<Store>()(
+  devtools(
+    persist(
+      (...args) => ({
+        ...createApiSlice(...args),
+        ...createUiSlice(...args),
+        ...createTaskSlice(...args),
+        ...createAuthSlice(...args), // Add here
+      }),
+      {
+        name: 'app-storage',
+        partialize: (state) => ({
+          theme: state.theme,
+          language: state.language,
+          isSidebarOpen: state.isSidebarOpen,
+          // Add auth if needed
+        }),
+      }
+    )
+  )
+)
+```
+
+### Test Page
+
+Visit `/zustand-test` to see interactive examples of all store features:
+
+- API data management (fetch, add, remove, update users)
+- UI state (theme toggle, notifications, modals, sidebar)
+- Task management (CRUD operations, filtering, sorting)
+
+### Performance Tips
+
+1. **Use Selectors**: Only subscribe to needed state
+   ```tsx
+   // Good: Only re-renders when users change
+   const users = useStore(state => state.users)
+
+   // Bad: Re-renders on any state change
+   const store = useStore()
+   ```
+
+2. **Use Selector Hooks**: Pre-built hooks are optimized
+   ```tsx
+   // Preferred
+   const users = useUsers()
+   const { addUser } = useApiActions()
+   ```
+
+3. **Shallow Comparison**: For objects/arrays
+   ```tsx
+   import { shallow } from 'zustand/shallow'
+
+   const { users, theme } = useStore(
+     state => ({ users: state.users, theme: state.theme }),
+     shallow
+   )
+   ```
+
+### Context API Alternative
+
+For simple component-scoped state, React Context is still useful:
 
 ```tsx
 import { createContext, useContext, useState } from 'react'
 
-const ThemeContext = createContext<'light' | 'dark'>('light')
+const LocalContext = createContext<string>('default')
 
-export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-
-  return (
-    <ThemeContext.Provider value={theme}>
-      {children}
-    </ThemeContext.Provider>
-  )
+export const LocalProvider = ({ children }) => {
+  const [value, setValue] = useState('initial')
+  return <LocalContext.Provider value={value}>{children}</LocalContext.Provider>
 }
 
-export const useTheme = () => useContext(ThemeContext)
+export const useLocalContext = () => useContext(LocalContext)
 ```
+
+**When to Use:**
+- Zustand: Global app state, cross-component data
+- Context API: Component-tree-scoped state
+- useState: Local component state
 
 ---
 
@@ -1038,6 +1297,14 @@ git push -u origin claude/claude-md-mi3wt3hjre4d4hsq-01TogY8r8Z42SbobhnEcji7T
 ---
 
 ## Changelog
+
+### 2025-11-18 (Update 2)
+- Implemented Zustand state management with slice pattern
+- Created apiSlice, uiSlice, and taskSlice with comprehensive features
+- Added /zustand-test route with interactive demonstrations
+- Updated navigation to include Zustand test page
+- Added Zustand middleware (devtools, persist)
+- Documented all Zustand patterns and best practices
 
 ### 2025-11-18
 - Initial creation of CLAUDE.md
