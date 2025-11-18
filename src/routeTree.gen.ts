@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZustandTestRouteImport } from './routes/zustand-test'
+import { Route as MswTestRouteImport } from './routes/msw-test'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ZustandTestRoute = ZustandTestRouteImport.update({
   id: '/zustand-test',
   path: '/zustand-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MswTestRoute = MswTestRouteImport.update({
+  id: '/msw-test',
+  path: '/msw-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,27 +31,31 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/zustand-test'
+  fullPaths: '/' | '/msw-test' | '/zustand-test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/zustand-test'
-  id: '__root__' | '/' | '/zustand-test'
+  to: '/' | '/msw-test' | '/zustand-test'
+  id: '__root__' | '/' | '/msw-test' | '/zustand-test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MswTestRoute: typeof MswTestRoute
   ZustandTestRoute: typeof ZustandTestRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/zustand-test'
       fullPath: '/zustand-test'
       preLoaderRoute: typeof ZustandTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/msw-test': {
+      id: '/msw-test'
+      path: '/msw-test'
+      fullPath: '/msw-test'
+      preLoaderRoute: typeof MswTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MswTestRoute: MswTestRoute,
   ZustandTestRoute: ZustandTestRoute,
 }
 export const routeTree = rootRouteImport

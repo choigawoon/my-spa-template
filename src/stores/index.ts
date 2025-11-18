@@ -82,7 +82,36 @@ export const useModal = () => useStore(state => state.modal)
 export const useNotifications = () => useStore(state => state.notifications)
 
 // Task selectors
-export const useTasks = () => useStore(state => state.getFilteredTasks())
+export const useTasks = () => useStore(
+  useShallow((state) => {
+    const { tasks, filter, sortBy } = state
+
+    // Filter tasks
+    let filtered = tasks
+    if (filter !== 'all') {
+      filtered = tasks.filter(task => task.status === filter)
+    }
+
+    // Sort tasks
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'priority': {
+          const priorityOrder = { high: 3, medium: 2, low: 1 }
+          return priorityOrder[b.priority] - priorityOrder[a.priority]
+        }
+        case 'dueDate':
+          if (!a.dueDate) return 1
+          if (!b.dueDate) return -1
+          return a.dueDate.getTime() - b.dueDate.getTime()
+        case 'createdAt':
+        default:
+          return b.createdAt.getTime() - a.createdAt.getTime()
+      }
+    })
+
+    return sorted
+  })
+)
 export const useSelectedTask = () => useStore(state => {
   const { selectedTaskId, getTaskById } = state
   return selectedTaskId ? getTaskById(selectedTaskId) : null
