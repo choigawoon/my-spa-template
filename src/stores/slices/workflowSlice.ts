@@ -212,21 +212,3 @@ export const createWorkflowSlice: StateCreator<WorkflowSlice> = (set, get) => ({
     }
   },
 })
-
-// Selector hooks for better performance
-export const useCurrentWork = (state: WorkflowSlice) => state.currentWork
-export const useWorkHistory = (state: WorkflowSlice) => state.workHistory
-export const useWorkLogs = (state: WorkflowSlice) => state.workLogs
-export const useIsWorkInProgress = (state: WorkflowSlice) => state.isWorkInProgress
-
-export const useWorkflowActions = (state: WorkflowSlice) => ({
-  startWork: state.startWork,
-  updateWorkProgress: state.updateWorkProgress,
-  completeWork: state.completeWork,
-  failWork: state.failWork,
-  cancelWork: state.cancelWork,
-  clearHistory: state.clearHistory,
-  addLog: state.addLog,
-  clearLogs: state.clearLogs,
-  simulateWork: state.simulateWork,
-})

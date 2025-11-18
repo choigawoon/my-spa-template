@@ -24,6 +24,7 @@
 
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
+import { shallow } from 'zustand/shallow'
 import { createApiSlice, type ApiSlice } from './slices/apiSlice'
 import { createUiSlice, type UiSlice } from './slices/uiSlice'
 import { createTaskSlice, type TaskSlice } from './slices/taskSlice'
@@ -106,7 +107,7 @@ export const useApiActions = () => useStore(state => ({
   addUser: state.addUser,
   removeUser: state.removeUser,
   updateUser: state.updateUser,
-}))
+}), shallow)
 
 export const useUiActions = () => useStore(state => ({
   toggleSidebar: state.toggleSidebar,
@@ -116,7 +117,7 @@ export const useUiActions = () => useStore(state => ({
   closeModal: state.closeModal,
   addNotification: state.addNotification,
   removeNotification: state.removeNotification,
-}))
+}), shallow)
 
 export const useTaskActions = () => useStore(state => ({
   addTask: state.addTask,
@@ -126,7 +127,7 @@ export const useTaskActions = () => useStore(state => ({
   setTaskStatus: state.setTaskStatus,
   setFilter: state.setFilter,
   setSortBy: state.setSortBy,
-}))
+}), shallow)
 
 export const useWorkflowActions = () => useStore(state => ({
   startWork: state.startWork,
@@ -138,7 +139,7 @@ export const useWorkflowActions = () => useStore(state => ({
   addLog: state.addLog,
   clearLogs: state.clearLogs,
   simulateWork: state.simulateWork,
-}))
+}), shallow)
 
 /**
  * Reset all stores (useful for logout)
