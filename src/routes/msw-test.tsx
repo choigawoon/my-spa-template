@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { Item, User } from '@/mocks/handlers'
+import type {
+  Item,
+  User,
+  ItemsListResponse,
+  UsersListResponse,
+} from '@/mocks/schemas'
 
 export const Route = createFileRoute('/msw-test')({
   component: MswTestPage,
@@ -21,13 +26,12 @@ function MswTestPage() {
   })
 
   // Items state
-  const [itemsResponse, setItemsResponse] = useState<
-    ApiResponse<{ items: Item[]; total: number }>
-  >({
-    data: null,
-    error: null,
-    loading: false,
-  })
+  const [itemsResponse, setItemsResponse] =
+    useState<ApiResponse<ItemsListResponse>>({
+      data: null,
+      error: null,
+      loading: false,
+    })
 
   const [singleItemResponse, setSingleItemResponse] = useState<
     ApiResponse<Item>
@@ -38,13 +42,12 @@ function MswTestPage() {
   })
 
   // Users state
-  const [usersResponse, setUsersResponse] = useState<
-    ApiResponse<{ users: User[]; total: number }>
-  >({
-    data: null,
-    error: null,
-    loading: false,
-  })
+  const [usersResponse, setUsersResponse] =
+    useState<ApiResponse<UsersListResponse>>({
+      data: null,
+      error: null,
+      loading: false,
+    })
 
   // Create item state
   const [newItemName, setNewItemName] = useState('')

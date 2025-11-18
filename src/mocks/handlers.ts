@@ -1,30 +1,30 @@
 import { http, HttpResponse } from 'msw'
+import { ZodError } from 'zod'
+import {
+  ItemSchema,
+  ItemCreateSchema,
+  ItemUpdateSchema,
+  ItemsListResponseSchema,
+  UserSchema,
+  UserCreateSchema,
+  UsersListResponseSchema,
+  LoginRequestSchema,
+  LoginResponseSchema,
+  HealthCheckSchema,
+  SearchResponseSchema,
+  HTTPErrorSchema,
+  type Item,
+  type User,
+  type ItemCreate,
+  type ItemUpdate,
+  type UserCreate,
+  type LoginRequest,
+  type HealthCheck,
+  type HTTPValidationError,
+} from './schemas'
 
-// Mock data types
-export interface Item {
-  id: number
-  name: string
-  description: string
-  price: number
-  category: string
-  created_at: string
-  updated_at: string
-}
-
-export interface User {
-  id: number
-  email: string
-  username: string
-  full_name: string
-  is_active: boolean
-  created_at: string
-}
-
-export interface HealthCheck {
-  status: string
-  timestamp: string
-  version: string
-}
+// Re-export types for convenience
+export type { Item, User } from './schemas'
 
 // Mock data storage
 let items: Item[] = [
@@ -80,15 +80,49 @@ let users: User[] = [
 let nextItemId = items.length + 1
 let nextUserId = users.length + 1
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Format Zod validation error to FastAPI-style validation error
+ */
+function formatValidationError(error: ZodError): HTTPValidationError {
+  return {
+    detail: error.errors.map((err) => ({
+      loc: ['body', ...err.path.map(String)],
+      msg: err.message,
+      type: err.code,
+    })),
+  }
+}
+
+/**
+ * Create validation error response (422 Unprocessable Entity)
+ */
+function validationErrorResponse(error: ZodError) {
+  return HttpResponse.json(formatValidationError(error), { status: 422 })
+}
+
+/**
+ * Create HTTP error response
+ */
+function httpErrorResponse(detail: string, status: number) {
+  return HttpResponse.json({ detail }, { status })
+}
+
 // MSW Request Handlers (FastAPI-style)
 export const handlers = [
   // Health Check
   http.get('/api/health', () => {
-    return HttpResponse.json<HealthCheck>({
+    const response: HealthCheck = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-    })
+    }
+    // Validate response with Zod
+    const validated = HealthCheckSchema.parse(response)
+    return HttpResponse.json(validated)
   }),
 
   // Items - List all items
@@ -105,12 +139,16 @@ export const handlers = [
 
     const paginatedItems = filteredItems.slice(skip, skip + limit)
 
-    return HttpResponse.json({
+    const response = {
       items: paginatedItems,
       total: filteredItems.length,
       skip,
       limit,
-    })
+    }
+
+    // Validate response with Zod
+    const validated = ItemsListResponseSchema.parse(response)
+    return HttpResponse.json(validated)
   }),
 
   // Items - Get single item
@@ -119,56 +157,71 @@ export const handlers = [
     const item = items.find((item) => item.id === Number(id))
 
     if (!item) {
-      return HttpResponse.json(
-        { detail: 'Item not found' },
-        { status: 404 }
-      )
+      return httpErrorResponse('Item not found', 404)
     }
 
-    return HttpResponse.json(item)
+    // Validate response with Zod
+    const validated = ItemSchema.parse(item)
+    return HttpResponse.json(validated)
   }),
 
   // Items - Create new item
   http.post('/api/items', async ({ request }) => {
-    const body = (await request.json()) as Omit<
-      Item,
-      'id' | 'created_at' | 'updated_at'
-    >
+    const body = await request.json()
+
+    // Validate request body with Zod (FastAPI-style)
+    const result = ItemCreateSchema.safeParse(body)
+
+    if (!result.success) {
+      return validationErrorResponse(result.error)
+    }
+
+    const validatedData = result.data
 
     const newItem: Item = {
       id: nextItemId++,
-      ...body,
+      ...validatedData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
 
     items.push(newItem)
 
-    return HttpResponse.json(newItem, { status: 201 })
+    // Validate response with Zod
+    const validated = ItemSchema.parse(newItem)
+    return HttpResponse.json(validated, { status: 201 })
   }),
 
   // Items - Update item
   http.put('/api/items/:id', async ({ params, request }) => {
     const { id } = params
-    const body = (await request.json()) as Partial<Item>
+    const body = await request.json()
+
+    // Validate request body with Zod
+    const result = ItemUpdateSchema.safeParse(body)
+
+    if (!result.success) {
+      return validationErrorResponse(result.error)
+    }
+
+    const validatedData = result.data
     const itemIndex = items.findIndex((item) => item.id === Number(id))
 
     if (itemIndex === -1) {
-      return HttpResponse.json(
-        { detail: 'Item not found' },
-        { status: 404 }
-      )
+      return httpErrorResponse('Item not found', 404)
     }
 
     items[itemIndex] = {
       ...items[itemIndex],
-      ...body,
+      ...validatedData,
       id: items[itemIndex].id, // ID는 변경 불가
       created_at: items[itemIndex].created_at, // 생성일 유지
       updated_at: new Date().toISOString(),
     }
 
-    return HttpResponse.json(items[itemIndex])
+    // Validate response with Zod
+    const validated = ItemSchema.parse(items[itemIndex])
+    return HttpResponse.json(validated)
   }),
 
   // Items - Delete item
@@ -177,10 +230,7 @@ export const handlers = [
     const itemIndex = items.findIndex((item) => item.id === Number(id))
 
     if (itemIndex === -1) {
-      return HttpResponse.json(
-        { detail: 'Item not found' },
-        { status: 404 }
-      )
+      return httpErrorResponse('Item not found', 404)
     }
 
     items.splice(itemIndex, 1)
@@ -196,12 +246,16 @@ export const handlers = [
 
     const paginatedUsers = users.slice(skip, skip + limit)
 
-    return HttpResponse.json({
+    const response = {
       users: paginatedUsers,
       total: users.length,
       skip,
       limit,
-    })
+    }
+
+    // Validate response with Zod
+    const validated = UsersListResponseSchema.parse(response)
+    return HttpResponse.json(validated)
   }),
 
   // Users - Get single user
@@ -210,55 +264,75 @@ export const handlers = [
     const user = users.find((user) => user.id === Number(id))
 
     if (!user) {
-      return HttpResponse.json(
-        { detail: 'User not found' },
-        { status: 404 }
-      )
+      return httpErrorResponse('User not found', 404)
     }
 
-    return HttpResponse.json(user)
+    // Validate response with Zod
+    const validated = UserSchema.parse(user)
+    return HttpResponse.json(validated)
   }),
 
   // Users - Create new user
   http.post('/api/users', async ({ request }) => {
-    const body = (await request.json()) as Omit<User, 'id' | 'created_at'>
+    const body = await request.json()
+
+    // Validate request body with Zod
+    const result = UserCreateSchema.safeParse(body)
+
+    if (!result.success) {
+      return validationErrorResponse(result.error)
+    }
+
+    const validatedData = result.data
 
     const newUser: User = {
       id: nextUserId++,
-      ...body,
+      ...validatedData,
       created_at: new Date().toISOString(),
     }
 
     users.push(newUser)
 
-    return HttpResponse.json(newUser, { status: 201 })
+    // Validate response with Zod
+    const validated = UserSchema.parse(newUser)
+    return HttpResponse.json(validated, { status: 201 })
   }),
 
   // Auth - Login (FastAPI-style)
   http.post('/api/auth/login', async ({ request }) => {
-    const body = (await request.json()) as {
-      username: string
-      password: string
+    const body = await request.json()
+
+    // Validate request body with Zod
+    const result = LoginRequestSchema.safeParse(body)
+
+    if (!result.success) {
+      return validationErrorResponse(result.error)
     }
 
+    const validatedData = result.data
+
     // Mock authentication logic
-    if (body.username === 'admin' && body.password === 'admin') {
-      return HttpResponse.json({
+    if (
+      validatedData.username === 'admin' &&
+      validatedData.password === 'admin'
+    ) {
+      const response = {
         access_token: 'mock-jwt-token-12345',
-        token_type: 'bearer',
+        token_type: 'bearer' as const,
         user: {
           id: 1,
           username: 'admin',
           email: 'admin@example.com',
           full_name: '관리자',
         },
-      })
+      }
+
+      // Validate response with Zod
+      const validated = LoginResponseSchema.parse(response)
+      return HttpResponse.json(validated)
     }
 
-    return HttpResponse.json(
-      { detail: 'Incorrect username or password' },
-      { status: 401 }
-    )
+    return httpErrorResponse('Incorrect username or password', 401)
   }),
 
   // Search endpoint (FastAPI-style)
@@ -272,10 +346,14 @@ export const handlers = [
         item.description.toLowerCase().includes(query.toLowerCase())
     )
 
-    return HttpResponse.json({
+    const response = {
       query,
       results,
       total: results.length,
-    })
+    }
+
+    // Validate response with Zod
+    const validated = SearchResponseSchema.parse(response)
+    return HttpResponse.json(validated)
   }),
 ]
