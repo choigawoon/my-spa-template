@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import type {
   Item,
-  User,
   ItemsListResponse,
   UsersListResponse,
 } from '@/mocks/schemas'
@@ -262,7 +261,7 @@ function MswTestPage() {
           >
             {healthResponse.loading ? 'Loading...' : 'Check Health'}
           </button>
-          {healthResponse.data && (
+          {healthResponse.data !== null && (
             <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-4 text-sm">
               {JSON.stringify(healthResponse.data, null, 2)}
             </pre>
@@ -388,7 +387,7 @@ function MswTestPage() {
               {createItemResponse.loading ? 'Creating...' : 'Create Item'}
             </button>
           </div>
-          {createItemResponse.data && (
+          {createItemResponse.data !== null && (
             <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-4 text-sm">
               {JSON.stringify(createItemResponse.data, null, 2)}
             </pre>
@@ -489,7 +488,7 @@ function MswTestPage() {
               Hint: username=admin, password=admin
             </p>
           </div>
-          {loginResponse.data && (
+          {loginResponse.data !== null && (
             <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-4 text-sm">
               {JSON.stringify(loginResponse.data, null, 2)}
             </pre>
@@ -523,7 +522,7 @@ function MswTestPage() {
               {searchResponse.loading ? 'Searching...' : 'Search'}
             </button>
           </div>
-          {searchResponse.data && (
+          {searchResponse.data !== null && (
             <div className="mt-4">
               <pre className="overflow-x-auto rounded-md bg-muted p-4 text-sm">
                 {JSON.stringify(searchResponse.data, null, 2)}

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { ZodError } from 'zod'
+import { ZodError, type ZodIssue } from 'zod'
 import {
   ItemSchema,
   ItemCreateSchema,
@@ -12,13 +12,8 @@ import {
   LoginResponseSchema,
   HealthCheckSchema,
   SearchResponseSchema,
-  HTTPErrorSchema,
   type Item,
   type User,
-  type ItemCreate,
-  type ItemUpdate,
-  type UserCreate,
-  type LoginRequest,
   type HealthCheck,
   type HTTPValidationError,
 } from './schemas'
@@ -89,7 +84,7 @@ let nextUserId = users.length + 1
  */
 function formatValidationError(error: ZodError): HTTPValidationError {
   return {
-    detail: error.errors.map((err) => ({
+    detail: error.issues.map((err: ZodIssue) => ({
       loc: ['body', ...err.path.map(String)],
       msg: err.message,
       type: err.code,
