@@ -83,12 +83,12 @@ export const useNotifications = () => useStore(state => state.notifications)
 
 // Task selectors
 export const useTasks = () => useStore(state => state.getFilteredTasks())
-export const useSelectedTask = () => {
-  const selectedTaskId = useStore(state => state.selectedTaskId)
-  const getTaskById = useStore(state => state.getTaskById)
+export const useSelectedTask = () => useStore(state => {
+  const { selectedTaskId, getTaskById } = state
   return selectedTaskId ? getTaskById(selectedTaskId) : null
-}
+})
 export const useTaskFilter = () => useStore(state => state.filter)
+export const useSortBy = () => useStore(state => state.sortBy)
 
 // Workflow selectors
 export const useCurrentWork = () => useStore(state => state.currentWork)

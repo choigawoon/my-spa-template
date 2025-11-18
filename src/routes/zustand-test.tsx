@@ -11,7 +11,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
-  useStore,
   useUsers,
   useTasks,
   useApiActions,
@@ -26,6 +25,9 @@ import {
   useWorkLogs,
   useIsWorkInProgress,
   useWorkflowActions,
+  useTaskFilter,
+  useSortBy,
+  useModal,
   type Task,
   type User,
   type WorkLog,
@@ -307,8 +309,8 @@ function UiSection() {
 
 function TaskSection() {
   const tasks = useTasks()
-  const filter = useStore(state => state.filter)
-  const sortBy = useStore(state => state.sortBy)
+  const filter = useTaskFilter()
+  const sortBy = useSortBy()
   const { addTask, deleteTask, setTaskStatus, setFilter, setSortBy } = useTaskActions()
 
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -901,7 +903,7 @@ function NotificationDisplay() {
 // ============================================================================
 
 function ModalDemo() {
-  const modal = useStore(state => state.modal)
+  const modal = useModal()
   const { closeModal } = useUiActions()
 
   if (!modal.isOpen) return null
