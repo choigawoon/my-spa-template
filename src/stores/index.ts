@@ -24,7 +24,7 @@
 
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { createApiSlice, type ApiSlice } from './slices/apiSlice'
 import { createUiSlice, type UiSlice } from './slices/uiSlice'
 import { createTaskSlice, type TaskSlice } from './slices/taskSlice'
@@ -101,45 +101,53 @@ export const useIsWorkInProgress = () => useStore(state => state.isWorkInProgres
  * Group related actions together
  */
 
-export const useApiActions = () => useStore(state => ({
-  fetchUsers: state.fetchUsers,
-  fetchPosts: state.fetchPosts,
-  addUser: state.addUser,
-  removeUser: state.removeUser,
-  updateUser: state.updateUser,
-}), shallow)
+export const useApiActions = () => useStore(
+  useShallow(state => ({
+    fetchUsers: state.fetchUsers,
+    fetchPosts: state.fetchPosts,
+    addUser: state.addUser,
+    removeUser: state.removeUser,
+    updateUser: state.updateUser,
+  }))
+)
 
-export const useUiActions = () => useStore(state => ({
-  toggleSidebar: state.toggleSidebar,
-  setTheme: state.setTheme,
-  setLanguage: state.setLanguage,
-  openModal: state.openModal,
-  closeModal: state.closeModal,
-  addNotification: state.addNotification,
-  removeNotification: state.removeNotification,
-}), shallow)
+export const useUiActions = () => useStore(
+  useShallow(state => ({
+    toggleSidebar: state.toggleSidebar,
+    setTheme: state.setTheme,
+    setLanguage: state.setLanguage,
+    openModal: state.openModal,
+    closeModal: state.closeModal,
+    addNotification: state.addNotification,
+    removeNotification: state.removeNotification,
+  }))
+)
 
-export const useTaskActions = () => useStore(state => ({
-  addTask: state.addTask,
-  updateTask: state.updateTask,
-  deleteTask: state.deleteTask,
-  selectTask: state.selectTask,
-  setTaskStatus: state.setTaskStatus,
-  setFilter: state.setFilter,
-  setSortBy: state.setSortBy,
-}), shallow)
+export const useTaskActions = () => useStore(
+  useShallow(state => ({
+    addTask: state.addTask,
+    updateTask: state.updateTask,
+    deleteTask: state.deleteTask,
+    selectTask: state.selectTask,
+    setTaskStatus: state.setTaskStatus,
+    setFilter: state.setFilter,
+    setSortBy: state.setSortBy,
+  }))
+)
 
-export const useWorkflowActions = () => useStore(state => ({
-  startWork: state.startWork,
-  updateWorkProgress: state.updateWorkProgress,
-  completeWork: state.completeWork,
-  failWork: state.failWork,
-  cancelWork: state.cancelWork,
-  clearHistory: state.clearHistory,
-  addLog: state.addLog,
-  clearLogs: state.clearLogs,
-  simulateWork: state.simulateWork,
-}), shallow)
+export const useWorkflowActions = () => useStore(
+  useShallow(state => ({
+    startWork: state.startWork,
+    updateWorkProgress: state.updateWorkProgress,
+    completeWork: state.completeWork,
+    failWork: state.failWork,
+    cancelWork: state.cancelWork,
+    clearHistory: state.clearHistory,
+    addLog: state.addLog,
+    clearLogs: state.clearLogs,
+    simulateWork: state.simulateWork,
+  }))
+)
 
 /**
  * Reset all stores (useful for logout)
