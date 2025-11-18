@@ -5,6 +5,7 @@
  * - API data management (users, posts)
  * - UI state (theme, sidebar, modals, notifications)
  * - Task management (CRUD operations, filtering, sorting)
+ * - Work propagation (no props drilling, direct state subscription)
  */
 
 import { createFileRoute } from '@tanstack/react-router'
@@ -20,8 +21,14 @@ import {
   useSidebar,
   useNotifications,
   useApiLoading,
+  useCurrentWork,
+  useWorkHistory,
+  useWorkLogs,
+  useIsWorkInProgress,
+  useWorkflowActions,
   type Task,
   type User,
+  type WorkLog,
 } from '@/stores'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +46,7 @@ function ZustandTestPage() {
           <UiSection />
         </div>
         <TaskSection />
+        <WorkPropagationSection />
         <NotificationDisplay />
         <ModalDemo />
       </div>
@@ -53,7 +61,7 @@ function Header() {
         Zustand State Management Test
       </h1>
       <p className="text-muted-foreground">
-        Interactive demonstration of all store slices: API data, UI state, and task management.
+        Interactive demonstration of all store slices: API data, UI state, task management, and work propagation.
       </p>
     </div>
   )
@@ -470,6 +478,379 @@ function TaskCard({
         >
           Delete
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// Work Propagation Section - Demonstrates no props drilling
+// ============================================================================
+
+/**
+ * Work Propagation Demonstration
+ *
+ * Shows how Zustand eliminates props drilling by allowing any component
+ * at any depth to directly subscribe to state changes.
+ *
+ * Component hierarchy:
+ * WorkPropagationSection
+ *   ├─ WorkflowControls (subscribes to isWorkInProgress, actions)
+ *   ├─ ComponentLevel1 (subscribes to currentWork)
+ *   │   └─ ComponentLevel2 (subscribes to workLogs)
+ *   │       └─ ComponentLevel3 (subscribes to workHistory)
+ *   │           └─ ComponentLevel4 (subscribes to isWorkInProgress)
+ *   └─ WorkflowLogs (subscribes to workLogs)
+ *
+ * Key Points:
+ * - No props passed between components
+ * - Each component subscribes to only what it needs
+ * - State changes propagate automatically via Zustand
+ * - No Context API or event bus required
+ */
+function WorkPropagationSection() {
+  return (
+    <section className="rounded-lg border border-border bg-card p-6">
+      <div className="mb-4">
+        <h2 className="text-2xl font-semibold text-card-foreground">
+          Work Propagation (No Props Drilling)
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Deep component hierarchy with state subscription at each level - no props drilling!
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <WorkflowControls />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ComponentLevel1 />
+          <WorkflowLogs />
+        </div>
+        <WorkHistoryDisplay />
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Level 0: Workflow Controls
+ * Subscribes to: isWorkInProgress, workflow actions
+ * Demonstrates: Action dispatch without props
+ */
+function WorkflowControls() {
+  const isWorkInProgress = useIsWorkInProgress()
+  const { simulateWork, cancelWork, clearHistory, clearLogs } = useWorkflowActions()
+  const [workName, setWorkName] = useState('')
+
+  const handleSimulateWork = () => {
+    if (workName.trim()) {
+      simulateWork(workName, 3000)
+      setWorkName('')
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <h3 className="mb-3 text-lg font-semibold text-foreground">
+        Level 0: Workflow Controls
+      </h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Subscribes to: <code className="rounded bg-muted px-1 py-0.5">isWorkInProgress</code>,{' '}
+        <code className="rounded bg-muted px-1 py-0.5">workflowActions</code>
+      </p>
+
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={workName}
+            onChange={(e) => setWorkName(e.target.value)}
+            placeholder="Enter work name"
+            disabled={isWorkInProgress}
+            className="flex-1 rounded border border-input bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
+            onKeyDown={(e) => e.key === 'Enter' && handleSimulateWork()}
+          />
+          <button
+            onClick={handleSimulateWork}
+            disabled={isWorkInProgress || !workName.trim()}
+            className={cn(
+              "rounded px-4 py-2 text-sm font-medium transition-colors",
+              isWorkInProgress || !workName.trim()
+                ? "cursor-not-allowed bg-secondary/50 text-secondary-foreground/50"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
+          >
+            {isWorkInProgress ? 'Working...' : 'Simulate Work'}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={cancelWork}
+            disabled={!isWorkInProgress}
+            className="rounded bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel Work
+          </button>
+          <button
+            onClick={clearHistory}
+            className="rounded bg-secondary px-3 py-1.5 text-sm text-secondary-foreground hover:bg-secondary/90"
+          >
+            Clear History
+          </button>
+          <button
+            onClick={clearLogs}
+            className="rounded bg-secondary px-3 py-1.5 text-sm text-secondary-foreground hover:bg-secondary/90"
+          >
+            Clear Logs
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Level 1: First nested component
+ * Subscribes to: currentWork
+ * Props: NONE - direct Zustand subscription
+ */
+function ComponentLevel1() {
+  const currentWork = useCurrentWork()
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border-2 border-blue-500/30 bg-blue-500/5 p-4">
+        <h3 className="mb-2 text-lg font-semibold text-foreground">
+          Level 1: Current Work Status
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Subscribes to: <code className="rounded bg-muted px-1 py-0.5">currentWork</code>
+          <br />
+          Props received: <code className="rounded bg-muted px-1 py-0.5">NONE</code>
+        </p>
+
+        {currentWork ? (
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm font-medium text-foreground">{currentWork.name}</p>
+              <p className="text-xs text-muted-foreground">Status: {currentWork.status}</p>
+            </div>
+            <div>
+              <div className="mb-1 flex justify-between text-xs">
+                <span>Progress</span>
+                <span>{currentWork.progress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${currentWork.progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No work in progress</p>
+        )}
+      </div>
+
+      <ComponentLevel2 />
+    </div>
+  )
+}
+
+/**
+ * Level 2: Second nested component
+ * Subscribes to: workLogs (first 3)
+ * Props: NONE - direct Zustand subscription
+ */
+function ComponentLevel2() {
+  const allLogs = useWorkLogs()
+  const recentLogs = allLogs.slice(0, 3)
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border-2 border-green-500/30 bg-green-500/5 p-4">
+        <h3 className="mb-2 text-lg font-semibold text-foreground">
+          Level 2: Recent Logs
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Subscribes to: <code className="rounded bg-muted px-1 py-0.5">workLogs</code>
+          <br />
+          Props received: <code className="rounded bg-muted px-1 py-0.5">NONE</code>
+        </p>
+
+        {recentLogs.length > 0 ? (
+          <div className="space-y-1">
+            {recentLogs.map((log) => (
+              <LogEntry key={log.id} log={log} compact />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No logs yet</p>
+        )}
+      </div>
+
+      <ComponentLevel3 />
+    </div>
+  )
+}
+
+/**
+ * Level 3: Third nested component
+ * Subscribes to: workHistory (count)
+ * Props: NONE - direct Zustand subscription
+ */
+function ComponentLevel3() {
+  const workHistory = useWorkHistory()
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border-2 border-purple-500/30 bg-purple-500/5 p-4">
+        <h3 className="mb-2 text-lg font-semibold text-foreground">
+          Level 3: History Count
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Subscribes to: <code className="rounded bg-muted px-1 py-0.5">workHistory</code>
+          <br />
+          Props received: <code className="rounded bg-muted px-1 py-0.5">NONE</code>
+        </p>
+
+        <div className="text-center">
+          <div className="text-3xl font-bold text-foreground">{workHistory.length}</div>
+          <div className="text-sm text-muted-foreground">completed works</div>
+        </div>
+      </div>
+
+      <ComponentLevel4 />
+    </div>
+  )
+}
+
+/**
+ * Level 4: Deepest nested component
+ * Subscribes to: isWorkInProgress
+ * Props: NONE - direct Zustand subscription
+ * Demonstrates: Even at deep nesting, no props drilling needed!
+ */
+function ComponentLevel4() {
+  const isWorkInProgress = useIsWorkInProgress()
+
+  return (
+    <div className="rounded-lg border-2 border-orange-500/30 bg-orange-500/5 p-4">
+      <h3 className="mb-2 text-lg font-semibold text-foreground">
+        Level 4: Deepest Component
+      </h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Subscribes to: <code className="rounded bg-muted px-1 py-0.5">isWorkInProgress</code>
+        <br />
+        Props received: <code className="rounded bg-muted px-1 py-0.5">NONE</code>
+      </p>
+
+      <div className="flex items-center justify-center gap-2 rounded bg-background p-3">
+        <div
+          className={cn(
+            "h-3 w-3 rounded-full transition-colors",
+            isWorkInProgress ? "animate-pulse bg-green-500" : "bg-gray-400"
+          )}
+        />
+        <span className="text-sm font-medium">
+          {isWorkInProgress ? 'System Active' : 'System Idle'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Workflow Logs Display
+ * Shows all logs in real-time
+ */
+function WorkflowLogs() {
+  const logs = useWorkLogs()
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <h3 className="mb-3 text-lg font-semibold text-foreground">
+        Live Logs ({logs.length})
+      </h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Subscribes to: <code className="rounded bg-muted px-1 py-0.5">workLogs</code>
+      </p>
+
+      <div className="max-h-64 space-y-1 overflow-y-auto">
+        {logs.length > 0 ? (
+          logs.map((log) => <LogEntry key={log.id} log={log} />)
+        ) : (
+          <p className="text-center text-sm text-muted-foreground">No logs yet</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Work History Display
+ * Shows completed/failed works
+ */
+function WorkHistoryDisplay() {
+  const history = useWorkHistory()
+
+  if (history.length === 0) return null
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <h3 className="mb-3 text-lg font-semibold text-foreground">
+        Work History ({history.length})
+      </h3>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {history.map((work) => (
+          <div
+            key={work.id}
+            className={cn(
+              "rounded border p-3",
+              work.status === 'completed' && "border-green-500/50 bg-green-500/10",
+              work.status === 'error' && "border-red-500/50 bg-red-500/10"
+            )}
+          >
+            <p className="mb-1 text-sm font-medium text-foreground">{work.name}</p>
+            <div className="text-xs text-muted-foreground">
+              <p>Status: {work.status}</p>
+              {work.error && <p className="text-red-500">Error: {work.error}</p>}
+              {work.startTime && work.endTime && (
+                <p>Duration: {((work.endTime - work.startTime) / 1000).toFixed(2)}s</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Log Entry Component
+ */
+function LogEntry({ log, compact = false }: { log: WorkLog; compact?: boolean }) {
+  const levelColors = {
+    info: 'text-blue-600 dark:text-blue-400',
+    success: 'text-green-600 dark:text-green-400',
+    warning: 'text-yellow-600 dark:text-yellow-400',
+    error: 'text-red-600 dark:text-red-400',
+  }
+
+  const time = new Date(log.timestamp).toLocaleTimeString()
+
+  return (
+    <div className={cn("rounded bg-muted p-2", compact && "p-1.5")}>
+      <div className="flex items-start gap-2">
+        <span className={cn("text-xs font-medium", levelColors[log.level])}>
+          [{log.level.toUpperCase()}]
+        </span>
+        <span className={cn("flex-1 text-xs text-foreground", compact && "text-[10px]")}>
+          {log.message}
+        </span>
+        {!compact && <span className="text-[10px] text-muted-foreground">{time}</span>}
       </div>
     </div>
   )

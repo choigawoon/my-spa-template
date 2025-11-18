@@ -27,9 +27,10 @@ import { devtools, persist } from 'zustand/middleware'
 import { createApiSlice, type ApiSlice } from './slices/apiSlice'
 import { createUiSlice, type UiSlice } from './slices/uiSlice'
 import { createTaskSlice, type TaskSlice } from './slices/taskSlice'
+import { createWorkflowSlice, type WorkflowSlice } from './slices/workflowSlice'
 
 // Combined store type
-export type Store = ApiSlice & UiSlice & TaskSlice
+export type Store = ApiSlice & UiSlice & TaskSlice & WorkflowSlice
 
 /**
  * Main application store
@@ -44,6 +45,7 @@ export const useStore = create<Store>()(
         ...createApiSlice(...args),
         ...createUiSlice(...args),
         ...createTaskSlice(...args),
+        ...createWorkflowSlice(...args),
       }),
       {
         name: 'app-storage', // LocalStorage key
@@ -87,6 +89,12 @@ export const useSelectedTask = () => {
 }
 export const useTaskFilter = () => useStore(state => state.filter)
 
+// Workflow selectors
+export const useCurrentWork = () => useStore(state => state.currentWork)
+export const useWorkHistory = () => useStore(state => state.workHistory)
+export const useWorkLogs = () => useStore(state => state.workLogs)
+export const useIsWorkInProgress = () => useStore(state => state.isWorkInProgress)
+
 /**
  * Action hooks for better organization
  * Group related actions together
@@ -120,6 +128,18 @@ export const useTaskActions = () => useStore(state => ({
   setSortBy: state.setSortBy,
 }))
 
+export const useWorkflowActions = () => useStore(state => ({
+  startWork: state.startWork,
+  updateWorkProgress: state.updateWorkProgress,
+  completeWork: state.completeWork,
+  failWork: state.failWork,
+  cancelWork: state.cancelWork,
+  clearHistory: state.clearHistory,
+  addLog: state.addLog,
+  clearLogs: state.clearLogs,
+  simulateWork: state.simulateWork,
+}))
+
 /**
  * Reset all stores (useful for logout)
  */
@@ -142,3 +162,4 @@ export const useResetStore = () => {
 export type { User, Post } from './slices/apiSlice'
 export type { Theme, Language, Notification } from './slices/uiSlice'
 export type { Task } from './slices/taskSlice'
+export type { WorkItem, WorkLog, WorkStatus } from './slices/workflowSlice'
