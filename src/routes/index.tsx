@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import logo from '../logo.svg'
 import { LanguageSelector } from '@/components/LanguageSelector'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -24,34 +26,40 @@ function App() {
         </p>
 
         {/* i18n Demo Section */}
-        <div className="mt-8 p-6 bg-gray-700/50 rounded-lg max-w-lg">
-          <h2 className="text-xl font-semibold mb-4">{t('language.select')}</h2>
-          <LanguageSelector variant="buttons" className="justify-center" />
+        <Card className="mt-8 max-w-lg bg-gray-700/50 border-gray-600">
+          <CardHeader>
+            <CardTitle className="text-xl text-white">{t('language.select')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LanguageSelector variant="buttons" className="justify-center" />
 
-          <div className="mt-6 text-left text-sm space-y-2">
-            <p><strong>{t('common.loading')}</strong></p>
-            <p><strong>{t('common.save')}</strong> / <strong>{t('common.cancel')}</strong></p>
-            <p><strong>{t('form.name')}:</strong> {t('form.required')}</p>
-          </div>
-        </div>
+            <div className="mt-6 text-left text-sm space-y-2 text-gray-200">
+              <p><strong>{t('common.loading')}</strong></p>
+              <p><strong>{t('common.save')}</strong> / <strong>{t('common.cancel')}</strong></p>
+              <p><strong>{t('form.name')}:</strong> {t('form.required')}</p>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="mt-8 flex gap-4">
-          <a
-            className="text-[#61dafb] hover:underline"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          <a
-            className="text-[#61dafb] hover:underline"
-            href="https://tanstack.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn TanStack
-          </a>
+          <Button variant="link" asChild className="text-[#61dafb]">
+            <a
+              href="https://reactjs.org"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Learn React
+            </a>
+          </Button>
+          <Button variant="link" asChild className="text-[#61dafb]">
+            <a
+              href="https://tanstack.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Learn TanStack
+            </a>
+          </Button>
         </div>
       </header>
     </div>

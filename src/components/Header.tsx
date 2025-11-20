@@ -1,97 +1,90 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-
-import { useState } from 'react'
-import { Home, Menu, X, Database, Server } from 'lucide-react'
+import { Home, Menu, Database, Server } from 'lucide-react'
 import LanguageSelector from './LanguageSelector'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 
 export default function Header() {
-  const [isOpen, setIsOpen] = useState(false)
   const { t } = useTranslation()
 
   return (
-    <>
-      <header className="p-4 flex items-center justify-between bg-gray-800 text-white shadow-lg">
-        <div className="flex items-center">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-            aria-label="Open menu"
-          >
-            <Menu size={24} />
-          </button>
-          <h1 className="ml-4 text-xl font-semibold">
-            <Link to="/">
-              <img
-                src="/tanstack-word-logo-white.svg"
-                alt="TanStack Logo"
-                className="h-10"
-              />
-            </Link>
-          </h1>
-        </div>
-        <LanguageSelector className="text-gray-800" />
-      </header>
+    <header className="p-4 flex items-center justify-between bg-gray-800 text-white shadow-lg">
+      <div className="flex items-center">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-gray-700"
+              aria-label="Open menu"
+            >
+              <Menu size={24} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80 bg-gray-900 text-white border-gray-700 p-0">
+            <SheetHeader className="p-4 border-b border-gray-700">
+              <SheetTitle className="text-xl font-bold text-white">{t('nav.home')}</SheetTitle>
+            </SheetHeader>
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-80 bg-gray-900 text-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold">{t('nav.home')}</h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-            aria-label="Close menu"
-          >
-            <X size={24} />
-          </button>
-        </div>
+            <nav className="flex-1 p-4 overflow-y-auto">
+              <Link
+                to="/"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <Home size={20} />
+                <span className="font-medium">{t('nav.home')}</span>
+              </Link>
 
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <Link
-            to="/"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-            activeProps={{
-              className:
-                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
-            }}
-          >
-            <Home size={20} />
-            <span className="font-medium">{t('nav.home')}</span>
+              {/* Demo Links Start */}
+              <Link
+                to="/zustand-test"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <Database size={20} />
+                <span className="font-medium">{t('nav.zustandTest')}</span>
+              </Link>
+
+              <Link
+                to="/msw-test"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <Server size={20} />
+                <span className="font-medium">{t('nav.mswTest')}</span>
+              </Link>
+              {/* Demo Links End */}
+            </nav>
+          </SheetContent>
+        </Sheet>
+        <h1 className="ml-4 text-xl font-semibold">
+          <Link to="/">
+            <img
+              src="/tanstack-word-logo-white.svg"
+              alt="TanStack Logo"
+              className="h-10"
+            />
           </Link>
-
-          {/* Demo Links Start */}
-          <Link
-            to="/zustand-test"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-            activeProps={{
-              className:
-                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
-            }}
-          >
-            <Database size={20} />
-            <span className="font-medium">{t('nav.zustandTest')}</span>
-          </Link>
-
-          <Link
-            to="/msw-test"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-            activeProps={{
-              className:
-                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
-            }}
-          >
-            <Server size={20} />
-            <span className="font-medium">{t('nav.mswTest')}</span>
-          </Link>
-          {/* Demo Links End */}
-        </nav>
-      </aside>
-    </>
+        </h1>
+      </div>
+      <LanguageSelector className="text-gray-800" />
+    </header>
   )
 }

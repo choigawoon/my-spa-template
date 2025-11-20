@@ -34,6 +34,28 @@ import {
   type WorkLog,
 } from '@/stores'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { X } from 'lucide-react'
 
 export const Route = createFileRoute('/zustand-test')({
   component: ZustandTestPage,
@@ -97,51 +119,46 @@ function ApiSection() {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
-        {t('pages.zustandTest.apiSection.title')}
-      </h2>
-
-      <div className="space-y-4">
-        <button
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('pages.zustandTest.apiSection.title')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Button
           onClick={fetchUsers}
           disabled={isLoading}
-          className={cn(
-            "rounded-lg bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90",
-            isLoading && "opacity-50 cursor-not-allowed"
-          )}
         >
           {isLoading ? t('pages.zustandTest.apiSection.loading') : t('pages.zustandTest.apiSection.fetchUsers')}
-        </button>
+        </Button>
 
         <div className="space-y-2">
-          <h3 className="text-lg font-medium">{t('pages.zustandTest.apiSection.addNewUser')}</h3>
+          <Label className="text-lg font-medium">{t('pages.zustandTest.apiSection.addNewUser')}</Label>
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={newUserName}
               onChange={(e) => setNewUserName(e.target.value)}
               placeholder={t('pages.zustandTest.apiSection.namePlaceholder')}
-              className="flex-1 rounded border border-input bg-background px-3 py-2 text-foreground"
+              className="flex-1"
             />
-            <input
+            <Input
               type="email"
               value={newUserEmail}
               onChange={(e) => setNewUserEmail(e.target.value)}
               placeholder={t('pages.zustandTest.apiSection.emailPlaceholder')}
-              className="flex-1 rounded border border-input bg-background px-3 py-2 text-foreground"
+              className="flex-1"
             />
-            <button
+            <Button
               onClick={handleAddUser}
-              className="rounded bg-secondary px-4 py-2 text-secondary-foreground hover:bg-secondary/90"
+              variant="secondary"
             >
               {t('pages.zustandTest.apiSection.add')}
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-lg font-medium">{t('pages.zustandTest.apiSection.usersCount', { count: users.length })}</h3>
+          <Label className="text-lg font-medium">{t('pages.zustandTest.apiSection.usersCount', { count: users.length })}</Label>
           <div className="space-y-2">
             {users.length === 0 ? (
               <p className="text-muted-foreground">{t('pages.zustandTest.apiSection.noUsers')}</p>
@@ -157,8 +174,8 @@ function ApiSection() {
             )}
           </div>
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -175,29 +192,34 @@ function UserCard({
   const roles: User['role'][] = ['admin', 'user', 'guest']
 
   return (
-    <div className="flex items-center justify-between rounded border border-border bg-background p-3">
+    <div className="flex items-center justify-between rounded-lg border bg-background p-3">
       <div>
         <p className="font-medium text-foreground">{user.name}</p>
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
       <div className="flex gap-2">
-        <select
+        <Select
           value={user.role}
-          onChange={(e) => onUpdate(user.id, { role: e.target.value as User['role'] })}
-          className="rounded border border-input bg-background px-2 py-1 text-sm text-foreground"
+          onValueChange={(value) => onUpdate(user.id, { role: value as User['role'] })}
         >
-          {roles.map((role) => (
-            <option key={role} value={role}>
-              {role}
-            </option>
-          ))}
-        </select>
-        <button
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {roles.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
           onClick={() => onRemove(user.id)}
-          className="rounded bg-destructive px-3 py-1 text-destructive-foreground hover:bg-destructive/90"
+          variant="destructive"
+          size="sm"
         >
           {t('pages.zustandTest.apiSection.remove')}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -214,98 +236,98 @@ function UiSection() {
   const { toggleSidebar, setTheme, setLanguage, openModal, addNotification } = useUiActions()
 
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
-        {t('pages.zustandTest.uiSection.title')}
-      </h2>
-
-      <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('pages.zustandTest.uiSection.title')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.uiSection.themeControl')}</h3>
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.uiSection.themeControl')}</Label>
           <div className="flex gap-2">
             {(['light', 'dark', 'system'] as const).map((themeOption) => (
-              <button
+              <Button
                 key={themeOption}
                 onClick={() => setTheme(themeOption)}
-                className={cn(
-                  "rounded px-4 py-2 capitalize transition-colors",
-                  theme === themeOption
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                )}
+                variant={theme === themeOption ? "default" : "secondary"}
+                className="capitalize"
               >
                 {t(`theme.${themeOption}`)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.uiSection.sidebarControl')}</h3>
-          <button
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.uiSection.sidebarControl')}</Label>
+          <Button
             onClick={toggleSidebar}
-            className="rounded bg-secondary px-4 py-2 text-secondary-foreground hover:bg-secondary/90"
+            variant="secondary"
           >
             {t('pages.zustandTest.uiSection.sidebarIs', { state: isSidebarOpen ? t('pages.zustandTest.uiSection.open') : t('pages.zustandTest.uiSection.closed') })}
-          </button>
+          </Button>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.uiSection.language')}</h3>
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.uiSection.language')}</Label>
           <div className="flex gap-2">
             {(['en', 'ko', 'ja'] as const).map((lang) => (
-              <button
+              <Button
                 key={lang}
                 onClick={() => setLanguage(lang)}
-                className="rounded bg-secondary px-4 py-2 uppercase text-secondary-foreground hover:bg-secondary/90"
+                variant="secondary"
+                className="uppercase"
               >
                 {lang}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.uiSection.modal')}</h3>
-          <button
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.uiSection.modal')}</Label>
+          <Button
             onClick={() => openModal(t('pages.zustandTest.uiSection.modalTitle'), t('pages.zustandTest.uiSection.modalContent'))}
-            className="rounded bg-secondary px-4 py-2 text-secondary-foreground hover:bg-secondary/90"
+            variant="secondary"
           >
             {t('pages.zustandTest.uiSection.openModal')}
-          </button>
+          </Button>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.uiSection.notifications')}</h3>
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.uiSection.notifications')}</Label>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               onClick={() => addNotification(t('pages.zustandTest.uiSection.infoNotification'), 'info')}
-              className="rounded bg-blue-500 px-3 py-1 text-white hover:bg-blue-600"
+              variant="outline"
+              className="bg-blue-500 text-white hover:bg-blue-600 hover:text-white"
             >
               {t('pages.zustandTest.uiSection.info')}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => addNotification(t('pages.zustandTest.uiSection.successNotification'), 'success')}
-              className="rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+              variant="outline"
+              className="bg-green-500 text-white hover:bg-green-600 hover:text-white"
             >
               {t('pages.zustandTest.uiSection.success')}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => addNotification(t('pages.zustandTest.uiSection.warningNotification'), 'warning')}
-              className="rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
+              variant="outline"
+              className="bg-yellow-500 text-white hover:bg-yellow-600 hover:text-white"
             >
               {t('pages.zustandTest.uiSection.warning')}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => addNotification(t('pages.zustandTest.uiSection.errorNotification'), 'error')}
-              className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
+              variant="outline"
+              className="bg-red-500 text-white hover:bg-red-600 hover:text-white"
             >
               {t('pages.zustandTest.uiSection.error')}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -349,85 +371,77 @@ function TaskSection() {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
-        {t('pages.zustandTest.taskSection.title')}
-      </h2>
-
-      <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('pages.zustandTest.taskSection.title')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1">
-            <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.taskSection.filter')}</h3>
+            <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.taskSection.filter')}</Label>
             <div className="flex gap-2">
               {(['all', 'pending', 'in_progress', 'completed'] as const).map((f) => (
-                <button
+                <Button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={cn(
-                    "rounded px-3 py-1 capitalize transition-colors",
-                    filter === f
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  )}
+                  variant={filter === f ? "default" : "secondary"}
+                  size="sm"
                 >
                   {filterLabels[f]}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           <div className="flex-1">
-            <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.taskSection.sortBy')}</h3>
+            <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.taskSection.sortBy')}</Label>
             <div className="flex gap-2">
               {(['createdAt', 'dueDate', 'priority'] as const).map((s) => (
-                <button
+                <Button
                   key={s}
                   onClick={() => setSortBy(s)}
-                  className={cn(
-                    "rounded px-3 py-1 capitalize transition-colors",
-                    sortBy === s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  )}
+                  variant={sortBy === s ? "default" : "secondary"}
+                  size="sm"
                 >
                   {sortLabels[s]}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.taskSection.addNewTask')}</h3>
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.taskSection.addNewTask')}</Label>
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               placeholder={t('pages.zustandTest.taskSection.taskTitlePlaceholder')}
-              className="flex-1 rounded border border-input bg-background px-3 py-2 text-foreground"
+              className="flex-1"
               onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
             />
-            <select
+            <Select
               value={newTaskPriority}
-              onChange={(e) => setNewTaskPriority(e.target.value as Task['priority'])}
-              className="rounded border border-input bg-background px-3 py-2 text-foreground"
+              onValueChange={(value) => setNewTaskPriority(value as Task['priority'])}
             >
-              <option value="low">{t('pages.zustandTest.taskSection.low')}</option>
-              <option value="medium">{t('pages.zustandTest.taskSection.medium')}</option>
-              <option value="high">{t('pages.zustandTest.taskSection.high')}</option>
-            </select>
-            <button
-              onClick={handleAddTask}
-              className="rounded bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">{t('pages.zustandTest.taskSection.low')}</SelectItem>
+                <SelectItem value="medium">{t('pages.zustandTest.taskSection.medium')}</SelectItem>
+                <SelectItem value="high">{t('pages.zustandTest.taskSection.high')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAddTask}>
               {t('pages.zustandTest.taskSection.addTask')}
-            </button>
+            </Button>
           </div>
         </div>
 
         <div>
-          <h3 className="mb-2 text-lg font-medium">{t('pages.zustandTest.taskSection.tasksCount', { count: tasks.length })}</h3>
+          <Label className="mb-2 block text-lg font-medium">{t('pages.zustandTest.taskSection.tasksCount', { count: tasks.length })}</Label>
           <div className="space-y-2">
             {tasks.length === 0 ? (
               <p className="text-muted-foreground">{t('pages.zustandTest.taskSection.noTasks')}</p>
@@ -443,8 +457,8 @@ function TaskSection() {
             )}
           </div>
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -458,49 +472,48 @@ function TaskCard({
   onStatusChange: (id: number, status: Task['status']) => void
 }) {
   const { t } = useTranslation()
-  const statusColors = {
-    pending: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-    in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  }
 
-  const priorityColors = {
-    low: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    medium: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-    high: 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200',
+  const priorityVariants: Record<Task['priority'], 'secondary' | 'warning' | 'destructive'> = {
+    low: 'secondary',
+    medium: 'warning',
+    high: 'destructive',
   }
 
   return (
-    <div className="flex items-center justify-between rounded border border-border bg-background p-3">
+    <div className="flex items-center justify-between rounded-lg border bg-background p-3">
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <p className="font-medium text-foreground">{task.title}</p>
-          <span className={cn("rounded px-2 py-0.5 text-xs font-medium", priorityColors[task.priority])}>
+          <Badge variant={priorityVariants[task.priority]}>
             {task.priority}
-          </span>
+          </Badge>
         </div>
         {task.description && (
           <p className="text-sm text-muted-foreground">{task.description}</p>
         )}
       </div>
       <div className="flex gap-2">
-        <select
+        <Select
           value={task.status}
-          onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
-          className={cn("rounded px-2 py-1 text-xs font-medium", statusColors[task.status])}
+          onValueChange={(value) => onStatusChange(task.id, value as Task['status'])}
         >
-          <option value="pending">{t('pages.zustandTest.taskSection.pending')}</option>
-          <option value="in_progress">{t('pages.zustandTest.taskSection.inProgress')}</option>
-          <option value="completed">{t('pages.zustandTest.taskSection.completed')}</option>
-          <option value="cancelled">{t('pages.zustandTest.taskSection.cancelled')}</option>
-        </select>
-        <button
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">{t('pages.zustandTest.taskSection.pending')}</SelectItem>
+            <SelectItem value="in_progress">{t('pages.zustandTest.taskSection.inProgress')}</SelectItem>
+            <SelectItem value="completed">{t('pages.zustandTest.taskSection.completed')}</SelectItem>
+            <SelectItem value="cancelled">{t('pages.zustandTest.taskSection.cancelled')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
           onClick={() => onDelete(task.id)}
-          className="rounded bg-destructive px-3 py-1 text-destructive-foreground hover:bg-destructive/90"
+          variant="destructive"
+          size="sm"
         >
           {t('common.delete')}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -510,58 +523,29 @@ function TaskCard({
 // Work Propagation Section - Demonstrates no props drilling
 // ============================================================================
 
-/**
- * Work Propagation Demonstration
- *
- * Shows how Zustand eliminates props drilling by allowing any component
- * at any depth to directly subscribe to state changes.
- *
- * Component hierarchy:
- * WorkPropagationSection
- *   ├─ WorkflowControls (subscribes to isWorkInProgress, actions)
- *   ├─ ComponentLevel1 (subscribes to currentWork)
- *   │   └─ ComponentLevel2 (subscribes to workLogs)
- *   │       └─ ComponentLevel3 (subscribes to workHistory)
- *   │           └─ ComponentLevel4 (subscribes to isWorkInProgress)
- *   └─ WorkflowLogs (subscribes to workLogs)
- *
- * Key Points:
- * - No props passed between components
- * - Each component subscribes to only what it needs
- * - State changes propagate automatically via Zustand
- * - No Context API or event bus required
- */
 function WorkPropagationSection() {
   const { t } = useTranslation()
 
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <div className="mb-4">
-        <h2 className="text-2xl font-semibold text-card-foreground">
-          {t('pages.zustandTest.workSection.title')}
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('pages.zustandTest.workSection.title')}</CardTitle>
+        <CardDescription>
           {t('pages.zustandTest.workSection.description')}
-        </p>
-      </div>
-
-      <div className="space-y-4">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <WorkflowControls />
         <div className="grid gap-4 lg:grid-cols-2">
           <ComponentLevel1 />
           <WorkflowLogs />
         </div>
         <WorkHistoryDisplay />
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
 
-/**
- * Level 0: Workflow Controls
- * Subscribes to: isWorkInProgress, workflow actions
- * Demonstrates: Action dispatch without props
- */
 function WorkflowControls() {
   const { t } = useTranslation()
   const isWorkInProgress = useIsWorkInProgress()
@@ -576,7 +560,7 @@ function WorkflowControls() {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
+    <div className="rounded-lg border bg-background p-4">
       <h3 className="mb-3 text-lg font-semibold text-foreground">
         {t('pages.zustandTest.workSection.level0.title')}
       </h3>
@@ -587,60 +571,51 @@ function WorkflowControls() {
 
       <div className="space-y-3">
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={workName}
             onChange={(e) => setWorkName(e.target.value)}
             placeholder={t('pages.zustandTest.workSection.level0.workNamePlaceholder')}
             disabled={isWorkInProgress}
-            className="flex-1 rounded border border-input bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
             onKeyDown={(e) => e.key === 'Enter' && handleSimulateWork()}
           />
-          <button
+          <Button
             onClick={handleSimulateWork}
             disabled={isWorkInProgress || !workName.trim()}
-            className={cn(
-              "rounded px-4 py-2 text-sm font-medium transition-colors",
-              isWorkInProgress || !workName.trim()
-                ? "cursor-not-allowed bg-secondary/50 text-secondary-foreground/50"
-                : "bg-primary text-primary-foreground hover:bg-primary/90"
-            )}
           >
             {isWorkInProgress ? t('pages.zustandTest.workSection.level0.working') : t('pages.zustandTest.workSection.level0.simulateWork')}
-          </button>
+          </Button>
         </div>
 
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={cancelWork}
             disabled={!isWorkInProgress}
-            className="rounded bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+            variant="destructive"
+            size="sm"
           >
             {t('pages.zustandTest.workSection.level0.cancelWork')}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={clearHistory}
-            className="rounded bg-secondary px-3 py-1.5 text-sm text-secondary-foreground hover:bg-secondary/90"
+            variant="secondary"
+            size="sm"
           >
             {t('pages.zustandTest.workSection.level0.clearHistory')}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={clearLogs}
-            className="rounded bg-secondary px-3 py-1.5 text-sm text-secondary-foreground hover:bg-secondary/90"
+            variant="secondary"
+            size="sm"
           >
             {t('pages.zustandTest.workSection.level0.clearLogs')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   )
 }
 
-/**
- * Level 1: First nested component
- * Subscribes to: currentWork
- * Props: NONE - direct Zustand subscription
- */
 function ComponentLevel1() {
   const { t } = useTranslation()
   const currentWork = useCurrentWork()
@@ -668,12 +643,7 @@ function ComponentLevel1() {
                 <span>{t('pages.zustandTest.workSection.level1.progress')}</span>
                 <span>{currentWork.progress}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${currentWork.progress}%` }}
-                />
-              </div>
+              <Progress value={currentWork.progress} />
             </div>
           </div>
         ) : (
@@ -686,11 +656,6 @@ function ComponentLevel1() {
   )
 }
 
-/**
- * Level 2: Second nested component
- * Subscribes to: workLogs (first 3)
- * Props: NONE - direct Zustand subscription
- */
 function ComponentLevel2() {
   const { t } = useTranslation()
   const allLogs = useWorkLogs()
@@ -724,11 +689,6 @@ function ComponentLevel2() {
   )
 }
 
-/**
- * Level 3: Third nested component
- * Subscribes to: workHistory (count)
- * Props: NONE - direct Zustand subscription
- */
 function ComponentLevel3() {
   const { t } = useTranslation()
   const workHistory = useWorkHistory()
@@ -756,12 +716,6 @@ function ComponentLevel3() {
   )
 }
 
-/**
- * Level 4: Deepest nested component
- * Subscribes to: isWorkInProgress
- * Props: NONE - direct Zustand subscription
- * Demonstrates: Even at deep nesting, no props drilling needed!
- */
 function ComponentLevel4() {
   const { t } = useTranslation()
   const isWorkInProgress = useIsWorkInProgress()
@@ -792,16 +746,12 @@ function ComponentLevel4() {
   )
 }
 
-/**
- * Workflow Logs Display
- * Shows all logs in real-time
- */
 function WorkflowLogs() {
   const { t } = useTranslation()
   const logs = useWorkLogs()
 
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
+    <div className="rounded-lg border bg-background p-4">
       <h3 className="mb-3 text-lg font-semibold text-foreground">
         {t('pages.zustandTest.workSection.liveLogs', { count: logs.length })}
       </h3>
@@ -820,10 +770,6 @@ function WorkflowLogs() {
   )
 }
 
-/**
- * Work History Display
- * Shows completed/failed works
- */
 function WorkHistoryDisplay() {
   const { t } = useTranslation()
   const history = useWorkHistory()
@@ -831,7 +777,7 @@ function WorkHistoryDisplay() {
   if (history.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
+    <div className="rounded-lg border bg-background p-4">
       <h3 className="mb-3 text-lg font-semibold text-foreground">
         {t('pages.zustandTest.workSection.workHistory', { count: history.length })}
       </h3>
@@ -860,15 +806,12 @@ function WorkHistoryDisplay() {
   )
 }
 
-/**
- * Log Entry Component
- */
 function LogEntry({ log, compact = false }: { log: WorkLog; compact?: boolean }) {
-  const levelColors = {
-    info: 'text-blue-600 dark:text-blue-400',
-    success: 'text-green-600 dark:text-green-400',
-    warning: 'text-yellow-600 dark:text-yellow-400',
-    error: 'text-red-600 dark:text-red-400',
+  const levelVariants: Record<WorkLog['level'], 'info' | 'success' | 'warning' | 'destructive'> = {
+    info: 'info',
+    success: 'success',
+    warning: 'warning',
+    error: 'destructive',
   }
 
   const time = new Date(log.timestamp).toLocaleTimeString()
@@ -876,9 +819,9 @@ function LogEntry({ log, compact = false }: { log: WorkLog; compact?: boolean })
   return (
     <div className={cn("rounded bg-muted p-2", compact && "p-1.5")}>
       <div className="flex items-start gap-2">
-        <span className={cn("text-xs font-medium", levelColors[log.level])}>
-          [{log.level.toUpperCase()}]
-        </span>
+        <Badge variant={levelVariants[log.level]} className="text-[10px]">
+          {log.level.toUpperCase()}
+        </Badge>
         <span className={cn("flex-1 text-xs text-foreground", compact && "text-[10px]")}>
           {log.message}
         </span>
@@ -916,12 +859,14 @@ function NotificationDisplay() {
           )}
         >
           <p className="mr-4">{notification.message}</p>
-          <button
+          <Button
             onClick={() => removeNotification(notification.id)}
-            className="text-white hover:opacity-80"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-white hover:bg-white/20 hover:text-white"
           >
-            ✕
-          </button>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       ))}
     </div>
@@ -936,20 +881,17 @@ function ModalDemo() {
   const modal = useModal()
   const { closeModal } = useUiActions()
 
-  if (!modal.isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="mb-4 text-2xl font-semibold text-card-foreground">{modal.title}</h2>
-        <p className="mb-4 text-muted-foreground">{modal.content}</p>
-        <button
-          onClick={closeModal}
-          className="rounded bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-        >
-          Close
-        </button>
-      </div>
-    </div>
+    <Dialog open={modal.isOpen} onOpenChange={(open) => !open && closeModal()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{modal.title}</DialogTitle>
+          <DialogDescription>{modal.content}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={closeModal}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
