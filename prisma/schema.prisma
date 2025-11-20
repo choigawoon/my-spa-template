@@ -1,0 +1,81 @@
+// Prisma Schema for MermaidChart Clone
+// This is the source of truth for database models
+// Zod schemas are auto-generated via prisma-zod-generator
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider                         = "zod-prisma-types"
+  output                           = "../src/lib/prisma-zod"
+  useMultipleFiles                 = true
+  createInputTypes                 = false
+  createModelTypes                 = true
+  addInputTypeValidation           = false
+  addIncludeType                   = false
+  addSelectType                    = false
+  validateWhereUniqueInput         = false
+  createOptionalDefaultValuesTypes = false
+  createRelationValuesTypes        = false
+  useDefaultValidators             = false
+  coerceDate                       = false
+  writeNullishInModelTypes         = false
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Item Model
+// =============================================================================
+
+/// @zod.import(["import { z } from 'zod'"])
+model Item {
+  /// @zod.number.int().positive()
+  id          Int      @id @default(autoincrement())
+
+  /// @zod.string.min(1, { message: "Name is required" })
+  name        String
+
+  /// @zod.string.min(1, { message: "Description is required" })
+  description String
+
+  /// @zod.number.positive({ message: "Price must be positive" })
+  price       Float
+
+  /// @zod.string.min(1, { message: "Category is required" })
+  category    String
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("items")
+}
+
+// =============================================================================
+// User Model
+// =============================================================================
+
+/// @zod.import(["import { z } from 'zod'"])
+model User {
+  /// @zod.number.int().positive()
+  id        Int      @id @default(autoincrement())
+
+  /// @zod.string.email({ message: "Invalid email address" })
+  email     String   @unique
+
+  /// @zod.string.min(3, { message: "Username must be at least 3 characters" })
+  username  String   @unique
+
+  /// @zod.string.min(1, { message: "Full name is required" })
+  fullName  String   @map("full_name")
+
+  isActive  Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

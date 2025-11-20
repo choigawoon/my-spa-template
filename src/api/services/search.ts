@@ -6,7 +6,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import type { SearchResponse } from '@/mocks/schemas'
+import type { SearchResponse } from '@/schemas'
 
 /**
  * Query keys for search

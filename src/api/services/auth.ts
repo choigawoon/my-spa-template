@@ -6,7 +6,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import type { LoginRequest, LoginResponse } from '@/mocks/schemas'
+import type { LoginRequest, LoginResponse } from '@/schemas'
 
 /**
  * Query keys for auth

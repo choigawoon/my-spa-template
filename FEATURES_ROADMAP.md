@@ -68,15 +68,16 @@
 - [x] MSW → 백엔드 전환 체크리스트
 
 #### Prisma + Zod 통합 (실제 DB 없이도 개발)
-- [ ] Prisma 스키마 작성 (`prisma/schema.prisma`)
-- [ ] Prisma Zod Generator 설치 및 설정
-- [ ] Zod 스키마 자동 생성 (`src/lib/prisma-zod/**`)
-- [ ] MSW 핸들러에서 생성된 Zod 스키마 사용
-- [ ] 타입 안전한 Mock 데이터 생성
+- [x] Prisma 스키마 작성 (`prisma/schema.prisma`)
+- [x] Prisma Zod Generator 설치 및 설정 (`zod-prisma-types`)
+- [x] 스키마 구조 분리 (`src/schemas/models/`, `src/schemas/api/`)
+- [x] MSW 핸들러에서 새 스키마 구조 사용
+- [x] API services에서 새 스키마 구조 사용
+- [ ] Zod 스키마 자동 생성 (prisma generate - 환경 구성 필요)
 - [ ] Prisma 스키마 변경 시 자동 재생성 워크플로우
 - [ ] 실제 DB 연결 시 Prisma Client 사용 가이드
 
-**진행률: 85% ✅** (구조 설계 완료, 구현 대기)
+**진행률: 95% ✅** (구조 완료, 자동 생성 환경만 대기)
 
 ---
 

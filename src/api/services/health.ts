@@ -6,7 +6,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import type { HealthCheck } from '@/mocks/schemas'
+import type { HealthCheck } from '@/schemas'
 
 /**
  * Query keys for health

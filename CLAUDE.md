@@ -121,7 +121,19 @@ yarn install # Wrong package manager
 │   ├── mocks/                   # MSW mock handlers
 │   │   ├── browser.ts          # MSW browser setup
 │   │   ├── handlers.ts         # API route handlers
-│   │   └── schemas.ts          # Zod schemas for validation
+│   │   └── schemas.ts          # Re-exports from src/schemas
+│   ├── schemas/                  # Zod schema definitions
+│   │   ├── api/                # API request/response schemas
+│   │   │   ├── item.ts        # Item API schemas
+│   │   │   ├── user.ts        # User API schemas
+│   │   │   ├── auth.ts        # Auth API schemas
+│   │   │   ├── common.ts      # Common schemas (errors, pagination)
+│   │   │   └── index.ts       # Re-exports
+│   │   ├── models/             # DB model schemas (mirrors Prisma)
+│   │   │   ├── item.ts        # Item model
+│   │   │   ├── user.ts        # User model
+│   │   │   └── index.ts       # Re-exports
+│   │   └── index.ts            # Main entry point
 │   ├── routes/                  # File-based routing (TanStack Router)
 │   │   ├── __root.tsx          # Root layout (persistent across routes)
 │   │   ├── index.tsx           # Home page (/)
@@ -144,6 +156,8 @@ yarn install # Wrong package manager
 │   ├── favicon.ico
 │   ├── manifest.json           # PWA manifest
 │   └── robots.txt
+├── prisma/                       # Prisma configuration
+│   └── schema.prisma           # Database schema (source of truth)
 ├── .env.example                 # Environment variables template
 ├── API_INTEGRATION.md           # API integration documentation
 ├── BACKEND_ROADMAP.md          # Backend development roadmap
@@ -162,7 +176,9 @@ yarn install # Wrong package manager
 - **API Services**: `src/api/services/*.ts` (TanStack Query hooks)
 - **API Client**: `src/api/client.ts` (fetch wrapper)
 - **Mock Handlers**: `src/mocks/handlers.ts` (MSW routes)
-- **Schemas**: `src/mocks/schemas.ts` (Zod validation)
+- **Schemas (API)**: `src/schemas/api/*.ts` (request/response schemas)
+- **Schemas (Models)**: `src/schemas/models/*.ts` (DB entity schemas)
+- **Prisma Schema**: `prisma/schema.prisma` (database models)
 - **Components**: `src/components/*.tsx`
 - **Routes**: `src/routes/*.tsx` (auto-discovered)
 - **Stores**: `src/stores/` (Zustand state management)
@@ -1019,44 +1035,64 @@ This project uses **Zod** for schema validation, providing:
 - TypeScript type inference
 - Consistent error handling
 
-### Schema Location
+### Schema Structure
 
-All schemas are in `src/mocks/schemas.ts`:
+Schemas are organized in `src/schemas/` with two main categories:
+
+```
+src/schemas/
+├── api/                  # API request/response schemas
+│   ├── item.ts          # ItemCreateSchema, ItemResponseSchema, etc.
+│   ├── user.ts          # UserCreateSchema, UserResponseSchema, etc.
+│   ├── auth.ts          # LoginRequestSchema, LoginResponseSchema
+│   ├── common.ts        # HTTPErrorSchema, PaginationParamsSchema, etc.
+│   └── index.ts         # Re-exports all API schemas
+├── models/               # DB model schemas (mirrors Prisma)
+│   ├── item.ts          # ItemSchema (full entity)
+│   ├── user.ts          # UserSchema (full entity)
+│   └── index.ts         # Re-exports all model schemas
+└── index.ts              # Main entry point
+```
+
+**Import from the main entry point:**
+```tsx
+import { ItemSchema, ItemCreateSchema, UserSchema } from '@/schemas'
+```
+
+### Example: API Schema
 
 ```tsx
+// src/schemas/api/item.ts
 import { z } from 'zod'
 
-// Base schema with validation rules
-export const ItemBaseSchema = z.object({
+// Request schema
+export const ItemCreateSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().min(1, 'Description is required'),
   price: z.number().positive('Price must be positive'),
   category: z.string().min(1, 'Category is required'),
 })
 
-// Create schema (request body)
-export const ItemCreateSchema = ItemBaseSchema
-
-// Update schema (partial fields)
-export const ItemUpdateSchema = ItemBaseSchema.partial()
-
-// Full schema (with ID and timestamps)
-export const ItemSchema = ItemBaseSchema.extend({
+// Response schema
+export const ItemResponseSchema = z.object({
   id: z.number().int().positive(),
+  name: z.string(),
+  description: z.string(),
+  price: z.number(),
+  category: z.string(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 })
 
 // Type inference
-export type Item = z.infer<typeof ItemSchema>
 export type ItemCreate = z.infer<typeof ItemCreateSchema>
-export type ItemUpdate = z.infer<typeof ItemUpdateSchema>
+export type Item = z.infer<typeof ItemResponseSchema>
 ```
 
 ### Using Schemas
 
 ```tsx
-import { ItemCreateSchema, type ItemCreate } from '@/mocks/schemas'
+import { ItemCreateSchema, type ItemCreate } from '@/schemas'
 
 // Validate data
 const result = ItemCreateSchema.safeParse(userData)
@@ -1072,12 +1108,29 @@ if (result.success) {
 
 ### Available Schemas
 
-- **Item**: `ItemSchema`, `ItemCreateSchema`, `ItemUpdateSchema`
-- **User**: `UserSchema`, `UserCreateSchema`
-- **Auth**: `LoginRequestSchema`, `LoginResponseSchema`
-- **Health**: `HealthCheckSchema`
-- **Search**: `SearchResponseSchema`
-- **Errors**: `HTTPErrorSchema`, `HTTPValidationErrorSchema`
+**API Schemas** (`src/schemas/api/`):
+- **Item**: `ItemCreateSchema`, `ItemUpdateSchema`, `ItemResponseSchema`, `ItemsListResponseSchema`
+- **User**: `UserCreateSchema`, `UserResponseSchema`, `UsersListResponseSchema`
+- **Auth**: `LoginRequestSchema`, `LoginResponseSchema`, `UserInfoSchema`
+- **Common**: `HTTPErrorSchema`, `HTTPValidationErrorSchema`, `HealthCheckSchema`, `SearchResponseSchema`, `PaginationParamsSchema`
+
+**Model Schemas** (`src/schemas/models/`):
+- **Item**: `ItemSchema`, `ItemBaseSchema`
+- **User**: `UserSchema`, `UserBaseSchema`
+
+### Prisma Integration
+
+The `prisma/schema.prisma` file defines the database models. Model schemas in `src/schemas/models/` mirror these Prisma models. When `prisma generate` is available, these can be auto-generated using `zod-prisma-types`.
+
+**Current workflow** (without DB):
+1. Define models in `prisma/schema.prisma`
+2. Manually update `src/schemas/models/` to match
+3. API schemas extend or reference model schemas
+
+**Future workflow** (with DB):
+1. Define models in `prisma/schema.prisma`
+2. Run `pnpm prisma:generate` to auto-generate Zod schemas
+3. API schemas import from generated files
 
 ---
 
