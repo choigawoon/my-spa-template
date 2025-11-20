@@ -17,63 +17,10 @@ import {
   type HealthCheck,
   type HTTPValidationError,
 } from '@/schemas'
+import { db } from '@/db'
 
 // Re-export types for convenience
 export type { Item, User } from '@/schemas'
-
-// Mock data storage
-let items: Item[] = [
-  {
-    id: 1,
-    name: '노트북',
-    description: '고성능 노트북',
-    price: 1500000,
-    category: '전자제품',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 2,
-    name: '마우스',
-    description: '무선 마우스',
-    price: 30000,
-    category: '전자제품',
-    created_at: '2024-01-02T00:00:00Z',
-    updated_at: '2024-01-02T00:00:00Z',
-  },
-  {
-    id: 3,
-    name: '키보드',
-    description: '기계식 키보드',
-    price: 150000,
-    category: '전자제품',
-    created_at: '2024-01-03T00:00:00Z',
-    updated_at: '2024-01-03T00:00:00Z',
-  },
-]
-
-let users: User[] = [
-  {
-    id: 1,
-    email: 'user1@example.com',
-    username: 'user1',
-    full_name: '홍길동',
-    is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    username: 'user2',
-    full_name: '김철수',
-    is_active: true,
-    created_at: '2024-01-02T00:00:00Z',
-  },
-]
-
-// Helper to generate IDs
-let nextItemId = items.length + 1
-let nextUserId = users.length + 1
 
 // ============================================================================
 // Helper Functions
@@ -106,7 +53,7 @@ function httpErrorResponse(detail: string, status: number) {
   return HttpResponse.json({ detail }, { status })
 }
 
-// MSW Request Handlers (FastAPI-style)
+// MSW Request Handlers (FastAPI-style with IndexedDB)
 export const handlers = [
   // Health Check
   http.get('/api/health', () => {
@@ -121,22 +68,35 @@ export const handlers = [
   }),
 
   // Items - List all items
-  http.get('/api/items', ({ request }) => {
+  http.get('/api/items', async ({ request }) => {
     const url = new URL(request.url)
     const skip = parseInt(url.searchParams.get('skip') || '0')
     const limit = parseInt(url.searchParams.get('limit') || '100')
     const category = url.searchParams.get('category')
 
-    let filteredItems = items
+    let items = await db.items.toArray()
+
     if (category) {
-      filteredItems = items.filter((item) => item.category === category)
+      items = items.filter((item) => item.category === category)
     }
 
-    const paginatedItems = filteredItems.slice(skip, skip + limit)
+    const total = items.length
+    const paginatedItems = items.slice(skip, skip + limit)
+
+    // Map to response format with required id
+    const responseItems: Item[] = paginatedItems.map((item) => ({
+      id: item.id!,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    }))
 
     const response = {
-      items: paginatedItems,
-      total: filteredItems.length,
+      items: responseItems,
+      total,
       skip,
       limit,
     }
@@ -147,16 +107,26 @@ export const handlers = [
   }),
 
   // Items - Get single item
-  http.get('/api/items/:id', ({ params }) => {
+  http.get('/api/items/:id', async ({ params }) => {
     const { id } = params
-    const item = items.find((item) => item.id === Number(id))
+    const item = await db.items.get(Number(id))
 
     if (!item) {
       return httpErrorResponse('Item not found', 404)
     }
 
+    const responseItem: Item = {
+      id: item.id!,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    }
+
     // Validate response with Zod
-    const validated = ItemSchema.parse(item)
+    const validated = ItemSchema.parse(responseItem)
     return HttpResponse.json(validated)
   }),
 
@@ -172,15 +142,21 @@ export const handlers = [
     }
 
     const validatedData = result.data
+    const now = new Date().toISOString()
+
+    // Add to IndexedDB
+    const id = (await db.items.add({
+      ...validatedData,
+      created_at: now,
+      updated_at: now,
+    })) as number
 
     const newItem: Item = {
-      id: nextItemId++,
+      id,
       ...validatedData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     }
-
-    items.push(newItem)
 
     // Validate response with Zod
     const validated = ItemSchema.parse(newItem)
@@ -200,50 +176,75 @@ export const handlers = [
     }
 
     const validatedData = result.data
-    const itemIndex = items.findIndex((item) => item.id === Number(id))
+    const itemId = Number(id)
+    const existingItem = await db.items.get(itemId)
 
-    if (itemIndex === -1) {
+    if (!existingItem) {
       return httpErrorResponse('Item not found', 404)
     }
 
-    items[itemIndex] = {
-      ...items[itemIndex],
+    const updatedItem = {
+      ...existingItem,
       ...validatedData,
-      id: items[itemIndex].id, // ID는 변경 불가
-      created_at: items[itemIndex].created_at, // 생성일 유지
       updated_at: new Date().toISOString(),
     }
 
+    // Update in IndexedDB
+    await db.items.put(updatedItem)
+
+    const responseItem: Item = {
+      id: updatedItem.id!,
+      name: updatedItem.name,
+      description: updatedItem.description,
+      price: updatedItem.price,
+      category: updatedItem.category,
+      created_at: updatedItem.created_at,
+      updated_at: updatedItem.updated_at,
+    }
+
     // Validate response with Zod
-    const validated = ItemSchema.parse(items[itemIndex])
+    const validated = ItemSchema.parse(responseItem)
     return HttpResponse.json(validated)
   }),
 
   // Items - Delete item
-  http.delete('/api/items/:id', ({ params }) => {
+  http.delete('/api/items/:id', async ({ params }) => {
     const { id } = params
-    const itemIndex = items.findIndex((item) => item.id === Number(id))
+    const itemId = Number(id)
+    const existingItem = await db.items.get(itemId)
 
-    if (itemIndex === -1) {
+    if (!existingItem) {
       return httpErrorResponse('Item not found', 404)
     }
 
-    items.splice(itemIndex, 1)
+    await db.items.delete(itemId)
 
     return HttpResponse.json({ message: 'Item deleted successfully' })
   }),
 
   // Users - List all users
-  http.get('/api/users', ({ request }) => {
+  http.get('/api/users', async ({ request }) => {
     const url = new URL(request.url)
     const skip = parseInt(url.searchParams.get('skip') || '0')
     const limit = parseInt(url.searchParams.get('limit') || '100')
 
+    const users = await db.users.toArray()
+    const total = users.length
     const paginatedUsers = users.slice(skip, skip + limit)
 
+    // Map to response format
+    const responseUsers: User[] = paginatedUsers.map((user) => ({
+      id: user.id!,
+      email: user.email,
+      username: user.username,
+      full_name: user.full_name,
+      is_active: user.is_active,
+      created_at: user.created_at,
+    }))
+
     const response = {
-      users: paginatedUsers,
-      total: users.length,
+      users: responseUsers,
+      total,
       skip,
       limit,
     }
@@ -254,16 +255,25 @@ export const handlers = [
   }),
 
   // Users - Get single user
-  http.get('/api/users/:id', ({ params }) => {
+  http.get('/api/users/:id', async ({ params }) => {
     const { id } = params
-    const user = users.find((user) => user.id === Number(id))
+    const user = await db.users.get(Number(id))
 
     if (!user) {
       return httpErrorResponse('User not found', 404)
     }
 
+    const responseUser: User = {
+      id: user.id!,
+      email: user.email,
+      username: user.username,
+      full_name: user.full_name,
+      is_active: user.is_active,
+      created_at: user.created_at,
+    }
+
     // Validate response with Zod
-    const validated = UserSchema.parse(user)
+    const validated = UserSchema.parse(responseUser)
     return HttpResponse.json(validated)
   }),
 
@@ -279,14 +289,25 @@ export const handlers = [
     }
 
     const validatedData = result.data
+    const now = new Date().toISOString()
+
+    // Add to IndexedDB
+    const id = (await db.users.add({
+      email: validatedData.email,
+      username: validatedData.username,
+      full_name: validatedData.full_name,
+      is_active: validatedData.is_active,
+      created_at: now,
+    })) as number
 
     const newUser: User = {
-      id: nextUserId++,
-      ...validatedData,
-      created_at: new Date().toISOString(),
+      id,
+      email: validatedData.email,
+      username: validatedData.username,
+      full_name: validatedData.full_name,
+      is_active: validatedData.is_active,
+      created_at: now,
     }
-
-    users.push(newUser)
 
     // Validate response with Zod
     const validated = UserSchema.parse(newUser)
@@ -331,20 +352,32 @@ export const handlers = [
   }),
 
   // Search endpoint (FastAPI-style)
-  http.get('/api/search', ({ request }) => {
+  http.get('/api/search', async ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('q') || ''
 
+    const items = await db.items.toArray()
     const results = items.filter(
       (item) =>
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         item.description.toLowerCase().includes(query.toLowerCase())
     )
 
+    // Map to response format
+    const responseResults: Item[] = results.map((item) => ({
+      id: item.id!,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    }))
+
     const response = {
       query,
-      results,
-      total: results.length,
+      results: responseResults,
+      total: responseResults.length,
     }
 
     // Validate response with Zod
