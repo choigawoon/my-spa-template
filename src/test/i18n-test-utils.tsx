@@ -4,11 +4,12 @@
  * Provides utilities for testing components with i18n support.
  */
 
-import { ReactElement, ReactNode } from 'react'
-import { render, RenderOptions, RenderResult } from '@testing-library/react'
+import type { ReactElement, ReactNode } from 'react'
+import { render } from '@testing-library/react'
+import type { RenderOptions, RenderResult } from '@testing-library/react'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { SupportedLanguage } from '@/lib/i18n'
+import type { SupportedLanguage } from '@/lib/i18n'
 
 // Import translation files for validation
 import en from '@/locales/en.json'

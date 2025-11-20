@@ -9,7 +9,6 @@ import i18n, {
   supportedLanguages,
   changeLanguage,
   getCurrentLanguage,
-  type SupportedLanguage,
 } from '@/lib/i18n'
 import {
   getTranslation,

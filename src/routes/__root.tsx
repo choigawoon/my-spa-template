@@ -5,6 +5,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useTranslation } from 'react-i18next'
 
 import Header from '../components/Header'
+import { PWAPrompt } from '../components/PWAPrompt'
 import { useTheme, useLanguage } from '../stores'
 
 function RootComponent() {
@@ -41,6 +42,7 @@ function RootComponent() {
     <>
       <Header />
       <Outlet />
+      <PWAPrompt />
       <TanStackDevtools
         config={{
           position: 'bottom-right',

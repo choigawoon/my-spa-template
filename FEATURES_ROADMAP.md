@@ -238,41 +238,41 @@
 
 #### Web App Manifest
 - [x] 기본 manifest.json 파일 (`public/manifest.json`)
-- [ ] Manifest 내용 커스터마이징 (앱 이름, 설명 등)
-- [ ] 다양한 크기의 아이콘 생성 (192x192, 512x512 등)
-- [ ] 아이콘 파일 추가
-- [ ] Theme color 설정
-- [ ] Background color 설정
-- [ ] Display mode 설정 (standalone, fullscreen 등)
+- [x] Manifest 내용 커스터마이징 (앱 이름, 설명 등)
+- [x] 다양한 크기의 아이콘 생성 (192x192, 512x512 등)
+- [x] 아이콘 파일 추가
+- [x] Theme color 설정
+- [x] Background color 설정
+- [x] Display mode 설정 (standalone, fullscreen 등)
 
 #### Service Worker
-- [ ] Vite PWA 플러그인 설치 (`vite-plugin-pwa`)
-- [ ] Service Worker 자동 생성 설정
-- [ ] 오프라인 지원 전략 설계
-- [ ] 캐싱 전략 구현 (Cache First, Network First 등)
-- [ ] 정적 자산 캐싱
-- [ ] API 응답 캐싱 (선택사항)
-- [ ] Service Worker 업데이트 전략
+- [x] Vite PWA 플러그인 설치 (`vite-plugin-pwa`)
+- [x] Service Worker 자동 생성 설정
+- [x] 오프라인 지원 전략 설계
+- [x] 캐싱 전략 구현 (Cache First, Network First 등)
+- [x] 정적 자산 캐싱
+- [x] API 응답 캐싱 (NetworkFirst 전략)
+- [x] Service Worker 업데이트 전략 (prompt 모드)
 
 #### 오프라인 폴백
-- [ ] 오프라인 페이지 생성
-- [ ] 네트워크 오류 감지
-- [ ] 오프라인 상태 UI 표시
-- [ ] 오프라인에서도 기본 기능 동작
+- [x] 오프라인 페이지 생성 (`public/offline.html`)
+- [x] 네트워크 오류 감지 (`usePWA` 훅)
+- [x] 오프라인 상태 UI 표시 (`PWAPrompt` 컴포넌트)
+- [x] 오프라인에서도 기본 기능 동작 (캐시된 자산 사용)
 
 #### PWA 기능
-- [ ] 설치 프롬프트 처리
-- [ ] 설치 상태 감지
-- [ ] 설치 버튼 UI
-- [ ] 업데이트 알림
+- [x] 설치 프롬프트 처리 (`beforeinstallprompt` 이벤트)
+- [x] 설치 상태 감지 (`display-mode: standalone`)
+- [x] 설치 버튼 UI (`PWAPrompt` 컴포넌트)
+- [x] 업데이트 알림 (`needRefresh` 상태)
 - [ ] 백그라운드 동기화 (선택사항)
 
 #### 빌드 설정
-- [ ] PWA 플러그인 Vite 설정 통합
-- [ ] 프로덕션 빌드 시 Service Worker 생성 확인
-- [ ] Manifest 파일 빌드 확인
+- [x] PWA 플러그인 Vite 설정 통합
+- [x] 프로덕션 빌드 시 Service Worker 생성 확인
+- [x] Manifest 파일 빌드 확인
 
-**진행률: 10% 🚧**
+**진행률: 95% ✅**
 
 ---
 
@@ -341,10 +341,10 @@
 | 스타일링 | 100% | ✅ 완료 |
 | 개발 도구 | 100% | ✅ 완료 |
 | 다국어 지원 (i18n) | 70% | ✅ 대부분 완료 |
-| PWA 지원 | 10% | 🚧 진행 중 |
+| PWA 지원 | 95% | ✅ 대부분 완료 |
 | Tauri 통합 준비 | 0% | 📝 계획 중 |
 
-**전체 진행률: 72.5%**
+**전체 진행률: 83.1%**
 
 ---
 
