@@ -11,7 +11,7 @@ import type {
   ItemCreate,
   ItemUpdate,
   ItemsListResponse,
-} from '@/mocks/schemas'
+} from '@/schemas'
 
 /**
  * Query keys for items

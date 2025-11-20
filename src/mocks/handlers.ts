@@ -16,10 +16,10 @@ import {
   type User,
   type HealthCheck,
   type HTTPValidationError,
-} from './schemas'
+} from '@/schemas'
 
 // Re-export types for convenience
-export type { Item, User } from './schemas'
+export type { Item, User } from '@/schemas'
 
 // Mock data storage
 let items: Item[] = [

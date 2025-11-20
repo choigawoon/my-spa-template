@@ -6,7 +6,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import type { User, UserCreate, UsersListResponse } from '@/mocks/schemas'
+import type { User, UserCreate, UsersListResponse } from '@/schemas'
 
 /**
  * Query keys for users
