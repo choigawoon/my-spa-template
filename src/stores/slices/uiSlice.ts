@@ -6,6 +6,7 @@
  */
 
 import type { StateCreator } from 'zustand'
+import i18n from '@/lib/i18n'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = 'en' | 'ko' | 'ja'
@@ -71,7 +72,8 @@ export const createUiSlice: StateCreator<UiSlice> = (set) => ({
 
   setLanguage: (language) => {
     set({ language })
-    // You can integrate with i18n here
+    // Update i18next language
+    i18n.changeLanguage(language)
     document.documentElement.lang = language
   },
 
