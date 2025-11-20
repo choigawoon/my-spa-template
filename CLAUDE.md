@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Development Guide
 
 **Repository**: mermaidchart-clone
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-11-20
 **Purpose**: Comprehensive guide for AI assistants working on this codebase
 
 ---
@@ -16,10 +16,12 @@
 6. [Styling Guidelines](#styling-guidelines)
 7. [Routing Patterns](#routing-patterns)
 8. [State Management](#state-management)
-9. [Data Fetching](#data-fetching)
-10. [Testing](#testing)
-11. [Common Tasks](#common-tasks)
-12. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
+9. [Data Fetching & API Layer](#data-fetching--api-layer)
+10. [API Mocking with MSW](#api-mocking-with-msw)
+11. [Schema Validation with Zod](#schema-validation-with-zod)
+12. [Testing](#testing)
+13. [Common Tasks](#common-tasks)
+14. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
 
 ---
 
@@ -30,15 +32,19 @@ This is a modern React application built with TanStack Router, featuring:
 - **Type-safe routing** with file-based routes
 - **Modern styling** with Tailwind CSS v4
 - **Component library** integration via shadcn/ui
+- **State management** with Zustand (slice pattern)
+- **Data fetching** with TanStack Query
+- **API mocking** with MSW (Mock Service Worker)
+- **Schema validation** with Zod
 - **Development tooling** with Vite for fast HMR
 - **Strict TypeScript** configuration for type safety
 
 ### Project Status
 
-- **Current Branch**: `claude/claude-md-mi3wt3hjre4d4hsq-01TogY8r8Z42SbobhnEcji7T`
+- **Current Branch**: `claude/claude-md-mi7g0dgho4blc3b7-01SymnBd9oUjixnUYxNjpGRF`
 - **Git Status**: Clean (no uncommitted changes)
-- **Last Commit**: `bae939f - latest setup`
-- **Production Ready**: ⚠️ Needs tests, environment config, and API integration
+- **Last Commit**: `4d537bf - 빌드 배포해도 msw로 동작하게끔 수정`
+- **Production Ready**: Development environment with full MSW mocking support
 
 ---
 
@@ -52,10 +58,13 @@ This is a modern React application built with TanStack Router, featuring:
 | **Build Tool** | Vite | 7.1.7 | Fast dev server & bundler |
 | **Language** | TypeScript | 5.7.2 | Type-safe JavaScript |
 | **Routing** | TanStack Router | 1.132.0 | File-based routing with code splitting |
-| **State Management** | Zustand | 5.0.8 | Lightweight state management with slice pattern |
+| **Data Fetching** | TanStack Query | 5.90.10 | Server state management |
+| **State Management** | Zustand | 5.0.8 | Client state with slice pattern |
 | **Styling** | Tailwind CSS | 4.0.6 | Utility-first CSS framework |
 | **UI Components** | shadcn/ui | latest | Pre-built component system |
 | **Icons** | Lucide React | 0.544.0 | Modern icon library |
+| **API Mocking** | MSW | 2.12.2 | Mock Service Worker for API mocking |
+| **Validation** | Zod | 4.1.12 | Schema validation & type inference |
 | **Testing** | Vitest | 3.0.5 | Unit test framework |
 
 ### Key Utilities
@@ -70,6 +79,7 @@ This is a modern React application built with TanStack Router, featuring:
 
 - **@tanstack/react-devtools** - Global debugging panel
 - **@tanstack/react-router-devtools** - Router state inspection
+- **@tanstack/react-query-devtools** - Query state inspection
 - **@testing-library/react** (16.2.0) - Component testing
 - **jsdom** (27.0.0) - DOM test environment
 
@@ -82,8 +92,8 @@ This is a modern React application built with TanStack Router, featuring:
 pnpm install
 
 # DO NOT USE:
-npm install  # ❌ Wrong package manager
-yarn install # ❌ Wrong package manager
+npm install  # Wrong package manager
+yarn install # Wrong package manager
 ```
 
 ---
@@ -93,31 +103,52 @@ yarn install # ❌ Wrong package manager
 ```
 /home/user/mermaidchart-clone/
 ├── src/                          # Main source code
-│   ├── components/               # React components
-│   │   └── Header.tsx           # Navigation header (mobile sidebar)
+│   ├── api/                     # API layer
+│   │   ├── client.ts           # API fetch wrapper
+│   │   ├── config.ts           # API configuration (mock/real mode)
+│   │   └── services/           # TanStack Query hooks
+│   │       ├── index.ts        # Re-exports all services
+│   │       ├── items.ts        # Items CRUD hooks
+│   │       ├── users.ts        # Users CRUD hooks
+│   │       ├── auth.ts         # Authentication hooks
+│   │       ├── search.ts       # Search hook
+│   │       └── health.ts       # Health check hook
+│   ├── components/              # React components
+│   │   └── Header.tsx          # Navigation header (mobile sidebar)
+│   ├── lib/                     # Utility functions
+│   │   ├── utils.ts            # cn() helper for class merging
+│   │   └── query-client.ts     # TanStack Query client config
+│   ├── mocks/                   # MSW mock handlers
+│   │   ├── browser.ts          # MSW browser setup
+│   │   ├── handlers.ts         # API route handlers
+│   │   └── schemas.ts          # Zod schemas for validation
 │   ├── routes/                  # File-based routing (TanStack Router)
 │   │   ├── __root.tsx          # Root layout (persistent across routes)
 │   │   ├── index.tsx           # Home page (/)
 │   │   ├── zustand-test.tsx    # Zustand test page
+│   │   ├── msw-test.tsx        # MSW + TanStack Query test page
 │   │   └── routeTree.gen.ts    # AUTO-GENERATED - DO NOT EDIT
 │   ├── stores/                  # Zustand state management
 │   │   ├── slices/             # Store slices (modular state)
 │   │   │   ├── apiSlice.ts    # API data management
 │   │   │   ├── uiSlice.ts     # UI state management
-│   │   │   └── taskSlice.ts   # Task management
+│   │   │   ├── taskSlice.ts   # Task management
+│   │   │   └── workflowSlice.ts # Workflow/progress tracking
 │   │   └── index.ts            # Combined store with middleware
-│   ├── lib/                     # Utility functions
-│   │   └── utils.ts            # cn() helper for class merging
 │   ├── main.tsx                # App entry point
 │   ├── styles.css              # Global styles + Tailwind config
 │   ├── reportWebVitals.ts      # Performance monitoring
 │   └── logo.svg                # React logo
 ├── public/                       # Static assets (served as-is)
+│   ├── mockServiceWorker.js    # MSW service worker
 │   ├── favicon.ico
 │   ├── manifest.json           # PWA manifest
-│   ├── robots.txt
-│   └── *.png, *.svg            # Logos and icons
-├── .vscode/                      # VS Code settings
+│   └── robots.txt
+├── .env.example                 # Environment variables template
+├── API_INTEGRATION.md           # API integration documentation
+├── BACKEND_ROADMAP.md          # Backend development roadmap
+├── FEATURES_ROADMAP.md         # Feature development roadmap
+├── SERVICE_ARCHITECTURE.md     # Service architecture documentation
 ├── package.json                # Dependencies & scripts
 ├── pnpm-lock.yaml              # Lock file (commit this)
 ├── tsconfig.json               # TypeScript config
@@ -128,17 +159,39 @@ yarn install # ❌ Wrong package manager
 
 ### Key File Locations
 
+- **API Services**: `src/api/services/*.ts` (TanStack Query hooks)
+- **API Client**: `src/api/client.ts` (fetch wrapper)
+- **Mock Handlers**: `src/mocks/handlers.ts` (MSW routes)
+- **Schemas**: `src/mocks/schemas.ts` (Zod validation)
 - **Components**: `src/components/*.tsx`
 - **Routes**: `src/routes/*.tsx` (auto-discovered)
 - **Stores**: `src/stores/` (Zustand state management)
-  - **Slices**: `src/stores/slices/*.ts` (modular state)
 - **Utilities**: `src/lib/*.ts`
 - **Styles**: `src/styles.css` (global CSS + Tailwind)
-- **Types**: Inferred from TypeScript, no separate types folder
 
 ---
 
 ## Development Workflow
+
+### Environment Configuration
+
+Create a `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+**Environment Variables**:
+```bash
+# API Mode: 'mock' uses MSW, 'real' uses actual backend
+VITE_API_MODE=mock
+
+# Backend API URL (used when VITE_API_MODE=real)
+VITE_API_BASE_URL=http://localhost:8000
+
+# Feature Flags
+VITE_ENABLE_DEVTOOLS=true
+```
 
 ### Starting Development
 
@@ -149,7 +202,7 @@ pnpm install
 # 2. Start dev server on http://localhost:3000
 pnpm dev
 
-# 3. Run tests (when available)
+# 3. Run tests
 pnpm test
 
 # 4. Build for production
@@ -163,7 +216,7 @@ pnpm serve
 
 | Command | Purpose | Details |
 |---------|---------|---------|
-| `pnpm dev` | Start dev server | Port 3000, HMR enabled |
+| `pnpm dev` | Start dev server | Port 3000, HMR enabled, MSW active |
 | `pnpm build` | Production build | Runs `vite build && tsc` |
 | `pnpm serve` | Preview build | Serves `dist/` on port 4173 |
 | `pnpm test` | Run tests | Executes Vitest test suite |
@@ -172,8 +225,15 @@ pnpm serve
 
 - **Hot Module Replacement (HMR)**: Instant updates without page refresh
 - **TanStack DevTools**: Open browser to see debugging panels
+- **React Query DevTools**: Inspect query state and cache
+- **MSW Console**: Logs mock API requests in console
 - **React StrictMode**: Enabled in development for warnings
-- **TypeScript checking**: Runs in parallel with Vite
+
+### Test Pages
+
+- `/` - Home page
+- `/zustand-test` - Interactive Zustand store demos
+- `/msw-test` - TanStack Query + MSW API demos
 
 ---
 
@@ -198,9 +258,10 @@ pnpm serve
 // Use @ alias for src imports
 import { cn } from '@/lib/utils'
 import Header from '@/components/Header'
+import { useItems } from '@/api/services'
 
 // NOT:
-import { cn } from '../lib/utils'  // ❌ Avoid relative imports
+import { cn } from '../lib/utils'  // Avoid relative imports
 ```
 
 ### Component Patterns
@@ -239,7 +300,8 @@ export const Counter = () => {
 
 - **Components**: PascalCase (e.g., `Header.tsx`, `UserProfile.tsx`)
 - **Utilities**: camelCase (e.g., `utils.ts`, `apiHelpers.ts`)
-- **Routes**: lowercase/kebab-case (e.g., `index.tsx`, `about.tsx`)
+- **Routes**: lowercase/kebab-case (e.g., `index.tsx`, `msw-test.tsx`)
+- **Services**: camelCase (e.g., `items.ts`, `auth.ts`)
 
 ### Import Order Convention
 
@@ -249,16 +311,24 @@ import { useState } from 'react'
 
 // 2. Third-party libraries
 import { Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
 import { Menu, X } from 'lucide-react'
 
 // 3. Internal utilities
 import { cn } from '@/lib/utils'
+import { apiClient } from '@/api/client'
 
-// 4. Components
+// 4. API services
+import { useItems, useCreateItem } from '@/api/services'
+
+// 5. Stores
+import { useStore } from '@/stores'
+
+// 6. Components
 import Header from '@/components/Header'
 
-// 5. Styles (if any)
-import './styles.css'
+// 7. Types
+import type { Item } from '@/mocks/schemas'
 ```
 
 ---
@@ -327,15 +397,6 @@ const buttonVariants = cva(
     }
   }
 )
-
-export const Button = ({ variant, size, className, ...props }) => {
-  return (
-    <button
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    />
-  )
-}
 ```
 
 ### Theme Colors (CSS Variables)
@@ -372,13 +433,15 @@ Available in both light and dark modes:
 
 ### Dark Mode
 
-Toggle dark mode by adding `.dark` class to `<html>`:
+Toggle dark mode by adding `.dark` class to `<html>` (handled automatically by root layout):
 
 ```tsx
-// Example: Dark mode toggle
-const toggleDarkMode = () => {
-  document.documentElement.classList.toggle('dark')
-}
+// Use the UI actions from Zustand
+const { setTheme } = useUiActions()
+
+setTheme('dark')   // Enable dark mode
+setTheme('light')  // Enable light mode
+setTheme('system') // Follow system preference
 ```
 
 ### Adding shadcn/ui Components
@@ -405,8 +468,8 @@ TanStack Router uses **file-based routing** - routes are defined by files in `sr
 | File Path | Route URL | Description |
 |-----------|-----------|-------------|
 | `index.tsx` | `/` | Home page |
-| `about.tsx` | `/about` | About page |
-| `blog.index.tsx` | `/blog` | Blog index |
+| `zustand-test.tsx` | `/zustand-test` | Zustand test page |
+| `msw-test.tsx` | `/msw-test` | MSW + Query test page |
 | `blog.$id.tsx` | `/blog/:id` | Dynamic blog post |
 | `__root.tsx` | N/A | Root layout (persistent) |
 
@@ -415,7 +478,6 @@ TanStack Router uses **file-based routing** - routes are defined by files in `sr
 **Step 1**: Create file in `src/routes/`
 
 ```bash
-# Example: Create an about page
 touch src/routes/about.tsx
 ```
 
@@ -431,8 +493,8 @@ export const Route = createFileRoute('/about')({
 
 function AboutPage() {
   return (
-    <div>
-      <h1>About Us</h1>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold">About Us</h1>
       <p>This is the about page</p>
     </div>
   )
@@ -454,14 +516,14 @@ export const Navigation = () => {
   return (
     <nav>
       <Link to="/">Home</Link>
-      <Link to="/about">About</Link>
+      <Link to="/msw-test">MSW Test</Link>
 
       {/* Active link styling */}
       <Link
-        to="/dashboard"
+        to="/zustand-test"
         activeProps={{ className: 'text-primary font-bold' }}
       >
-        Dashboard
+        Zustand Test
       </Link>
 
       {/* Dynamic routes */}
@@ -481,33 +543,32 @@ The root layout wraps ALL routes and persists across navigation:
 // src/routes/__root.tsx
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 import Header from '@/components/Header'
+import { useTheme } from '@/stores'
 
-export const Route = createRootRoute({
-  component: () => (
+function RootComponent() {
+  const theme = useTheme()
+
+  // Apply theme to DOM
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [theme])
+
+  return (
     <>
-      <Header /> {/* Persistent header */}
-      <Outlet /> {/* Route content renders here */}
-      <TanStackRouterDevtools /> {/* Dev tools (dev only) */}
+      <Header />
+      <Outlet />
+      <TanStackDevtools />
     </>
   )
-})
-```
-
-### Dynamic Routes with Parameters
-
-```tsx
-// src/routes/blog.$postId.tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/blog/$postId')({
-  component: BlogPost
-})
-
-function BlogPost() {
-  const { postId } = Route.useParams()
-
-  return <h1>Blog Post ID: {postId}</h1>
 }
+
+export const Route = createRootRoute({
+  component: RootComponent,
+})
 ```
 
 ### Programmatic Navigation
@@ -535,17 +596,16 @@ export const LoginForm = () => {
 
 This project uses **Zustand** for global state management with a modular slice pattern.
 
-**Installed**: `zustand@5.0.8`
-
 #### Store Architecture
 
 ```
 src/stores/
 ├── slices/
-│   ├── apiSlice.ts    # API data management (users, posts)
-│   ├── uiSlice.ts     # UI state (theme, sidebar, modals, notifications)
-│   └── taskSlice.ts   # Task management (CRUD, filtering, sorting)
-└── index.ts           # Combined store with middleware
+│   ├── apiSlice.ts      # API data management (users, posts)
+│   ├── uiSlice.ts       # UI state (theme, sidebar, modals)
+│   ├── taskSlice.ts     # Task management (CRUD, filtering)
+│   └── workflowSlice.ts # Workflow progress tracking
+└── index.ts             # Combined store with middleware
 ```
 
 ### Basic Usage
@@ -554,17 +614,12 @@ src/stores/
 import { useStore } from '@/stores'
 
 export const MyComponent = () => {
-  // Use entire store
-  const store = useStore()
-
   // Use specific state (recommended for performance)
   const users = useStore(state => state.users)
   const theme = useStore(state => state.theme)
-  const tasks = useStore(state => state.tasks)
 
   // Use actions
   const addTask = useStore(state => state.addTask)
-  const setTheme = useStore(state => state.setTheme)
 
   return <div>...</div>
 }
@@ -575,7 +630,10 @@ export const MyComponent = () => {
 Use pre-built selector hooks for better performance:
 
 ```tsx
-import { useUsers, useTheme, useTasks, useApiActions } from '@/stores'
+import {
+  useUsers, useTheme, useTasks,
+  useApiActions, useUiActions, useTaskActions, useWorkflowActions
+} from '@/stores'
 
 export const MyComponent = () => {
   // State selectors
@@ -585,6 +643,7 @@ export const MyComponent = () => {
 
   // Action selectors
   const { fetchUsers, addUser } = useApiActions()
+  const { setTheme, addNotification } = useUiActions()
 
   return <div>...</div>
 }
@@ -593,8 +652,6 @@ export const MyComponent = () => {
 ### Store Slices
 
 #### 1. API Slice (Data Management)
-
-Manages server-side data and API responses.
 
 ```tsx
 import { useApiActions, useUsers } from '@/stores'
@@ -607,32 +664,14 @@ export const UserList = () => {
     <div>
       <button onClick={fetchUsers}>Fetch Users</button>
       {users.map(user => (
-        <div key={user.id}>
-          {user.name}
-          <button onClick={() => removeUser(user.id)}>Remove</button>
-        </div>
+        <div key={user.id}>{user.name}</div>
       ))}
     </div>
   )
 }
 ```
 
-**Available State:**
-- `users: User[]` - User list
-- `posts: Post[]` - Post list
-- `isLoading: boolean` - Loading state
-- `error: string | null` - Error message
-
-**Available Actions:**
-- `fetchUsers()` - Fetch users from API
-- `fetchPosts()` - Fetch posts from API
-- `addUser(user)` - Add new user
-- `removeUser(id)` - Remove user
-- `updateUser(id, updates)` - Update user
-
 #### 2. UI Slice (UI State)
-
-Manages client-side UI state like themes, modals, and notifications.
 
 ```tsx
 import { useTheme, useUiActions } from '@/stores'
@@ -645,74 +684,64 @@ export const ThemeToggle = () => {
     <div>
       <button onClick={() => setTheme('dark')}>Dark Mode</button>
       <button onClick={() => addNotification('Hello!', 'success')}>
-        Show Notification
+        Notify
       </button>
     </div>
   )
 }
 ```
 
-**Available State:**
-- `isSidebarOpen: boolean` - Sidebar open/closed
-- `theme: 'light' | 'dark' | 'system'` - Current theme
-- `language: 'en' | 'ko' | 'ja'` - Current language
-- `modal: { isOpen: boolean, title?: string, content?: string }` - Modal state
-- `notifications: Notification[]` - Notification list
-
-**Available Actions:**
-- `toggleSidebar()` - Toggle sidebar
-- `setSidebarOpen(isOpen)` - Set sidebar state
-- `setTheme(theme)` - Set theme (automatically updates DOM)
-- `setLanguage(language)` - Set language
-- `openModal(title, content)` - Open modal
-- `closeModal()` - Close modal
-- `addNotification(message, type)` - Add notification (auto-removes after 5s)
-- `removeNotification(id)` - Remove notification
-
 #### 3. Task Slice (Task Management)
-
-Manages tasks with filtering and sorting capabilities.
 
 ```tsx
 import { useTasks, useTaskActions } from '@/stores'
 
 export const TaskList = () => {
   const tasks = useTasks() // Already filtered and sorted
-  const { addTask, deleteTask, setFilter, setTaskStatus } = useTaskActions()
+  const { addTask, deleteTask, setFilter } = useTaskActions()
 
   return (
     <div>
       <button onClick={() => setFilter('completed')}>Show Completed</button>
       {tasks.map(task => (
-        <div key={task.id}>
-          {task.title}
-          <button onClick={() => setTaskStatus(task.id, 'completed')}>
-            Complete
-          </button>
-          <button onClick={() => deleteTask(task.id)}>Delete</button>
-        </div>
+        <div key={task.id}>{task.title}</div>
       ))}
     </div>
   )
 }
 ```
 
-**Available State:**
-- `tasks: Task[]` - Task list
-- `selectedTaskId: number | null` - Currently selected task
-- `filter: 'all' | 'pending' | 'in_progress' | 'completed'` - Current filter
-- `sortBy: 'createdAt' | 'dueDate' | 'priority'` - Sort order
+#### 4. Workflow Slice (Progress Tracking)
 
-**Available Actions:**
-- `addTask(task)` - Add new task
-- `updateTask(id, updates)` - Update task
-- `deleteTask(id)` - Delete task
-- `selectTask(id)` - Select task
-- `setFilter(filter)` - Set filter
-- `setSortBy(sortBy)` - Set sort order
-- `setTaskStatus(id, status)` - Update task status
-- `getFilteredTasks()` - Get filtered and sorted tasks
-- `getTaskById(id)` - Get task by ID
+```tsx
+import {
+  useCurrentWork, useWorkHistory, useWorkLogs,
+  useIsWorkInProgress, useWorkflowActions
+} from '@/stores'
+
+export const WorkflowDemo = () => {
+  const currentWork = useCurrentWork()
+  const workHistory = useWorkHistory()
+  const isWorking = useIsWorkInProgress()
+  const { simulateWork, clearHistory } = useWorkflowActions()
+
+  return (
+    <div>
+      <button
+        onClick={() => simulateWork('Build Project', 3000)}
+        disabled={isWorking}
+      >
+        Start Work
+      </button>
+      {currentWork && (
+        <div>
+          <p>{currentWork.name}: {currentWork.progress}%</p>
+        </div>
+      )}
+    </div>
+  )
+}
+```
 
 ### Middleware
 
@@ -720,254 +749,335 @@ The store uses two Zustand middleware:
 
 #### 1. DevTools (Development Only)
 
-Redux DevTools integration for debugging:
-
-```tsx
-// Automatically enabled in development
-// Open Redux DevTools in browser to inspect state
-```
+Redux DevTools integration for debugging - automatically enabled in development.
 
 #### 2. Persist
 
 LocalStorage persistence for UI preferences:
-
-```tsx
-// Automatically persists:
-// - theme
-// - language
-// - isSidebarOpen
-
-// Does NOT persist API data or tasks (intentional)
-```
-
-### Creating New Slices
-
-To add a new slice:
-
-**Step 1:** Create slice file in `src/stores/slices/`:
-
-```tsx
-// src/stores/slices/authSlice.ts
-import { StateCreator } from 'zustand'
-
-export interface AuthSlice {
-  user: User | null
-  isAuthenticated: boolean
-  login: (username: string, password: string) => Promise<void>
-  logout: () => void
-}
-
-export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
-  user: null,
-  isAuthenticated: false,
-
-  login: async (username, password) => {
-    // Login logic
-    set({ user: { username }, isAuthenticated: true })
-  },
-
-  logout: () => {
-    set({ user: null, isAuthenticated: false })
-  },
-})
-```
-
-**Step 2:** Add to main store in `src/stores/index.ts`:
-
-```tsx
-import { createAuthSlice, AuthSlice } from './slices/authSlice'
-
-// Update Store type
-export type Store = ApiSlice & UiSlice & TaskSlice & AuthSlice
-
-// Add to store creation
-export const useStore = create<Store>()(
-  devtools(
-    persist(
-      (...args) => ({
-        ...createApiSlice(...args),
-        ...createUiSlice(...args),
-        ...createTaskSlice(...args),
-        ...createAuthSlice(...args), // Add here
-      }),
-      {
-        name: 'app-storage',
-        partialize: (state) => ({
-          theme: state.theme,
-          language: state.language,
-          isSidebarOpen: state.isSidebarOpen,
-          // Add auth if needed
-        }),
-      }
-    )
-  )
-)
-```
-
-### Test Page
-
-Visit `/zustand-test` to see interactive examples of all store features:
-
-- API data management (fetch, add, remove, update users)
-- UI state (theme toggle, notifications, modals, sidebar)
-- Task management (CRUD operations, filtering, sorting)
-
-### Performance Tips
-
-1. **Use Selectors**: Only subscribe to needed state
-   ```tsx
-   // Good: Only re-renders when users change
-   const users = useStore(state => state.users)
-
-   // Bad: Re-renders on any state change
-   const store = useStore()
-   ```
-
-2. **Use Selector Hooks**: Pre-built hooks are optimized
-   ```tsx
-   // Preferred
-   const users = useUsers()
-   const { addUser } = useApiActions()
-   ```
-
-3. **Shallow Comparison**: For objects/arrays
-   ```tsx
-   import { shallow } from 'zustand/shallow'
-
-   const { users, theme } = useStore(
-     state => ({ users: state.users, theme: state.theme }),
-     shallow
-   )
-   ```
-
-### Context API Alternative
-
-For simple component-scoped state, React Context is still useful:
-
-```tsx
-import { createContext, useContext, useState } from 'react'
-
-const LocalContext = createContext<string>('default')
-
-export const LocalProvider = ({ children }) => {
-  const [value, setValue] = useState('initial')
-  return <LocalContext.Provider value={value}>{children}</LocalContext.Provider>
-}
-
-export const useLocalContext = () => useContext(LocalContext)
-```
-
-**When to Use:**
-- Zustand: Global app state, cross-component data
-- Context API: Component-tree-scoped state
-- useState: Local component state
+- theme
+- language
+- isSidebarOpen
 
 ---
 
-## Data Fetching
+## Data Fetching & API Layer
 
-### Method 1: TanStack Router Loaders (Recommended)
+### TanStack Query Integration
 
-Load data **before** route renders:
+This project uses **TanStack Query** for all server state management.
+
+#### Query Client Configuration
 
 ```tsx
-// src/routes/users.tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-type User = { id: number; name: string }
-
-export const Route = createFileRoute('/users')({
-  loader: async () => {
-    const response = await fetch('https://api.example.com/users')
-    return response.json() as Promise<{ results: User[] }>
+// src/lib/query-client.ts
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,  // 5 minutes
+      gcTime: 10 * 60 * 1000,    // 10 minutes
+    },
+    mutations: {
+      retry: 0,
+    },
   },
-  component: UsersPage
+})
+```
+
+### API Client
+
+The API client (`src/api/client.ts`) provides a unified fetch wrapper:
+
+```tsx
+import { apiClient } from '@/api/client'
+
+// GET request
+const data = await apiClient.get<ItemsResponse>('/api/items', {
+  params: { skip: 0, limit: 10 }
 })
 
-function UsersPage() {
-  const data = Route.useLoaderData()
+// POST request
+const newItem = await apiClient.post<Item>('/api/items', {
+  name: 'New Item',
+  price: 100
+})
 
-  return (
-    <ul>
-      {data.results.map(user => (
-        <li key={user.id}>{user.name}</li>
-      ))}
-    </ul>
-  )
+// PUT request
+const updated = await apiClient.put<Item>('/api/items/1', {
+  name: 'Updated'
+})
+
+// DELETE request
+await apiClient.delete<{ message: string }>('/api/items/1')
+```
+
+### API Services Pattern
+
+Each resource has its own service file with TanStack Query hooks:
+
+```tsx
+// src/api/services/items.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient } from '@/api/client'
+
+// Query keys for cache management
+export const itemsKeys = {
+  all: ['items'] as const,
+  lists: () => [...itemsKeys.all, 'list'] as const,
+  list: (params) => [...itemsKeys.lists(), params] as const,
+  detail: (id: number) => [...itemsKeys.all, 'detail', id] as const,
+}
+
+// Fetch items list
+export const useItems = (params?: { skip?: number; limit?: number }) => {
+  return useQuery({
+    queryKey: itemsKeys.list(params),
+    queryFn: () => apiClient.get<ItemsListResponse>('/api/items', { params }),
+  })
+}
+
+// Create item with cache invalidation
+export const useCreateItem = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: ItemCreate) => apiClient.post<Item>('/api/items', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itemsKeys.lists() })
+    },
+  })
 }
 ```
 
-### Method 2: TanStack Query (For Complex Data)
-
-**Install**:
-```bash
-pnpm add @tanstack/react-query @tanstack/react-query-devtools
-```
-
-**Setup in `main.tsx`**:
+### Using API Hooks in Components
 
 ```tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useItems, useCreateItem, useDeleteItem } from '@/api/services'
 
-const queryClient = new QueryClient()
-
-root.render(
-  <QueryClientProvider client={queryClient}>
-    <RouterProvider router={router} />
-  </QueryClientProvider>
-)
-```
-
-**Usage**:
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-
-export const UsersList = () => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const res = await fetch('https://api.example.com/users')
-      return res.json()
-    }
-  })
+export const ItemsPage = () => {
+  const { data, isLoading, error, refetch } = useItems()
+  const createMutation = useCreateItem()
+  const deleteMutation = useDeleteItem()
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
 
   return (
-    <ul>
-      {data.map(user => <li key={user.id}>{user.name}</li>)}
-    </ul>
+    <div>
+      <button onClick={() => refetch()}>Refresh</button>
+
+      {data?.items.map(item => (
+        <div key={item.id}>
+          <span>{item.name}</span>
+          <button
+            onClick={() => deleteMutation.mutate(item.id)}
+            disabled={deleteMutation.isPending}
+          >
+            Delete
+          </button>
+        </div>
+      ))}
+
+      <button
+        onClick={() => createMutation.mutate({ name: 'New', price: 100 })}
+        disabled={createMutation.isPending}
+      >
+        {createMutation.isPending ? 'Creating...' : 'Create Item'}
+      </button>
+    </div>
   )
 }
 ```
 
-### Method 3: Native Fetch in useEffect
+### Available API Services
 
-For simple one-off fetches:
+| Service | Hooks | Endpoints |
+|---------|-------|-----------|
+| **items.ts** | `useItems`, `useItem`, `useCreateItem`, `useUpdateItem`, `useDeleteItem` | `/api/items` |
+| **users.ts** | `useUsers`, `useUser`, `useCreateUser` | `/api/users` |
+| **auth.ts** | `useLogin` | `/api/auth/login` |
+| **search.ts** | `useSearch` | `/api/search` |
+| **health.ts** | `useHealthCheck` | `/api/health` |
+
+---
+
+## API Mocking with MSW
+
+### Overview
+
+This project uses **MSW (Mock Service Worker)** to mock backend APIs during development and production builds. This allows frontend development without a real backend.
+
+### Configuration
+
+**API Mode** is controlled by environment variable:
+
+```bash
+# .env
+VITE_API_MODE=mock  # Use MSW (default)
+VITE_API_MODE=real  # Use actual backend
+```
+
+### MSW Setup
 
 ```tsx
-import { useState, useEffect } from 'react'
+// src/mocks/browser.ts
+import { setupWorker } from 'msw/browser'
+import { handlers } from './handlers'
 
-export const UsersList = () => {
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
+export const worker = setupWorker(...handlers)
 
-  useEffect(() => {
-    fetch('https://api.example.com/users')
-      .then(res => res.json())
-      .then(data => {
-        setUsers(data)
-        setLoading(false)
-      })
-  }, [])
-
-  if (loading) return <div>Loading...</div>
-
-  return <ul>{/* render users */}</ul>
+export async function startMockServiceWorker() {
+  await worker.start({
+    onUnhandledRequest: 'bypass',
+    serviceWorker: {
+      url: '/mockServiceWorker.js',
+    },
+  })
 }
 ```
+
+### Creating Mock Handlers
+
+```tsx
+// src/mocks/handlers.ts
+import { http, HttpResponse } from 'msw'
+import { ItemSchema, ItemCreateSchema } from './schemas'
+
+export const handlers = [
+  // GET /api/items
+  http.get('/api/items', ({ request }) => {
+    const url = new URL(request.url)
+    const skip = parseInt(url.searchParams.get('skip') || '0')
+    const limit = parseInt(url.searchParams.get('limit') || '100')
+
+    const paginatedItems = items.slice(skip, skip + limit)
+    return HttpResponse.json({
+      items: paginatedItems,
+      total: items.length,
+      skip,
+      limit,
+    })
+  }),
+
+  // POST /api/items
+  http.post('/api/items', async ({ request }) => {
+    const body = await request.json()
+
+    // Validate with Zod
+    const result = ItemCreateSchema.safeParse(body)
+    if (!result.success) {
+      return HttpResponse.json(
+        { detail: result.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const newItem = { id: nextId++, ...result.data }
+    items.push(newItem)
+
+    return HttpResponse.json(newItem, { status: 201 })
+  }),
+]
+```
+
+### Available Mock Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/items` | List items (paginated) |
+| GET | `/api/items/:id` | Get single item |
+| POST | `/api/items` | Create item |
+| PUT | `/api/items/:id` | Update item |
+| DELETE | `/api/items/:id` | Delete item |
+| GET | `/api/users` | List users |
+| GET | `/api/users/:id` | Get single user |
+| POST | `/api/users` | Create user |
+| POST | `/api/auth/login` | Login (admin/admin) |
+| GET | `/api/search` | Search items |
+
+### Switching to Real Backend
+
+1. Update `.env`:
+   ```bash
+   VITE_API_MODE=real
+   VITE_API_BASE_URL=http://localhost:8000
+   ```
+
+2. MSW will not start, and requests go to actual backend
+3. Vite proxy handles CORS in development
+
+---
+
+## Schema Validation with Zod
+
+### Overview
+
+This project uses **Zod** for schema validation, providing:
+- Runtime validation
+- TypeScript type inference
+- Consistent error handling
+
+### Schema Location
+
+All schemas are in `src/mocks/schemas.ts`:
+
+```tsx
+import { z } from 'zod'
+
+// Base schema with validation rules
+export const ItemBaseSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
+  price: z.number().positive('Price must be positive'),
+  category: z.string().min(1, 'Category is required'),
+})
+
+// Create schema (request body)
+export const ItemCreateSchema = ItemBaseSchema
+
+// Update schema (partial fields)
+export const ItemUpdateSchema = ItemBaseSchema.partial()
+
+// Full schema (with ID and timestamps)
+export const ItemSchema = ItemBaseSchema.extend({
+  id: z.number().int().positive(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+})
+
+// Type inference
+export type Item = z.infer<typeof ItemSchema>
+export type ItemCreate = z.infer<typeof ItemCreateSchema>
+export type ItemUpdate = z.infer<typeof ItemUpdateSchema>
+```
+
+### Using Schemas
+
+```tsx
+import { ItemCreateSchema, type ItemCreate } from '@/mocks/schemas'
+
+// Validate data
+const result = ItemCreateSchema.safeParse(userData)
+
+if (result.success) {
+  // result.data is typed as ItemCreate
+  const validData = result.data
+} else {
+  // Handle validation errors
+  console.error(result.error.issues)
+}
+```
+
+### Available Schemas
+
+- **Item**: `ItemSchema`, `ItemCreateSchema`, `ItemUpdateSchema`
+- **User**: `UserSchema`, `UserCreateSchema`
+- **Auth**: `LoginRequestSchema`, `LoginResponseSchema`
+- **Health**: `HealthCheckSchema`
+- **Search**: `SearchResponseSchema`
+- **Errors**: `HTTPErrorSchema`, `HTTPValidationErrorSchema`
 
 ---
 
@@ -980,14 +1090,12 @@ export const UsersList = () => {
 **Running Tests**:
 ```bash
 pnpm test         # Run all tests
-pnpm test --watch # Watch mode (not in package.json)
 ```
 
 ### Writing Component Tests
 
-**Example Test** (create in `src/components/__tests__/Header.test.tsx`):
-
 ```tsx
+// src/components/__tests__/Header.test.tsx
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import Header from '../Header'
@@ -995,175 +1103,154 @@ import Header from '../Header'
 describe('Header Component', () => {
   it('renders menu button', () => {
     render(<Header />)
-
     const menuButton = screen.getByRole('button', { name: /menu/i })
     expect(menuButton).toBeDefined()
-  })
-
-  it('shows logo text', () => {
-    render(<Header />)
-
-    expect(screen.getByText('My App')).toBeDefined()
   })
 })
 ```
 
-### Testing Library Queries
+### Testing TanStack Query Hooks
 
 ```tsx
-// Preferred query order:
-screen.getByRole('button', { name: /submit/i })
-screen.getByLabelText('Email')
-screen.getByPlaceholderText('Enter email')
-screen.getByText('Welcome')
-screen.getByTestId('custom-element')  // Last resort
+import { describe, it, expect } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { useItems } from '@/api/services'
+
+describe('useItems', () => {
+  it('fetches items', async () => {
+    const queryClient = new QueryClient()
+
+    const { result } = renderHook(() => useItems(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      ),
+    })
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+  })
+})
 ```
-
-### Test File Naming
-
-- Component tests: `Component.test.tsx` or `Component.spec.tsx`
-- Utility tests: `utils.test.ts`
-- Place tests in `__tests__/` folder or alongside components
-
-### Current Test Coverage
-
-**Status**: ⚠️ No tests exist yet
-
-**To Add Tests**:
-1. Create test files following conventions above
-2. Run `pnpm test` to execute
-3. Add to CI/CD pipeline before production
 
 ---
 
 ## Common Tasks
 
-### Task 1: Add a New Route
+### Task 1: Add a New API Endpoint
 
-```bash
-# 1. Create route file
-touch src/routes/pricing.tsx
-
-# 2. Add component
-cat > src/routes/pricing.tsx << 'EOF'
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/pricing')({
-  component: PricingPage
+**Step 1**: Add Zod schemas in `src/mocks/schemas.ts`:
+```tsx
+export const ProductSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  price: z.number(),
 })
 
-function PricingPage() {
+export type Product = z.infer<typeof ProductSchema>
+```
+
+**Step 2**: Add MSW handler in `src/mocks/handlers.ts`:
+```tsx
+http.get('/api/products', () => {
+  return HttpResponse.json({ products: mockProducts })
+}),
+```
+
+**Step 3**: Create service in `src/api/services/products.ts`:
+```tsx
+export const useProducts = () => {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: () => apiClient.get<ProductsResponse>('/api/products'),
+  })
+}
+```
+
+**Step 4**: Export from `src/api/services/index.ts`:
+```tsx
+export * from './products'
+```
+
+### Task 2: Add a New Route
+
+```bash
+touch src/routes/products.tsx
+```
+
+```tsx
+// src/routes/products.tsx
+import { createFileRoute } from '@tanstack/react-router'
+import { useProducts } from '@/api/services'
+
+export const Route = createFileRoute('/products')({
+  component: ProductsPage
+})
+
+function ProductsPage() {
+  const { data, isLoading } = useProducts()
+
+  if (isLoading) return <div>Loading...</div>
+
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold">Pricing</h1>
-      <p>Our pricing plans</p>
+      <h1 className="text-3xl font-bold">Products</h1>
+      {data?.products.map(p => (
+        <div key={p.id}>{p.name}</div>
+      ))}
     </div>
   )
 }
-EOF
-
-# 3. Add link in Header component
-# (Edit src/components/Header.tsx manually)
 ```
 
-### Task 2: Add a New Component
+### Task 3: Add a New Zustand Slice
 
-```bash
-# 1. Create component file
-touch src/components/Button.tsx
+**Step 1**: Create slice in `src/stores/slices/authSlice.ts`:
+```tsx
+import { StateCreator } from 'zustand'
 
-# 2. Define component
-cat > src/components/Button.tsx << 'EOF'
-import { cn } from '@/lib/utils'
-
-interface ButtonProps {
-  children: React.ReactNode
-  onClick?: () => void
-  variant?: 'primary' | 'secondary'
-  className?: string
+export interface AuthSlice {
+  user: User | null
+  isAuthenticated: boolean
+  login: (token: string, user: User) => void
+  logout: () => void
 }
 
-export const Button = ({ children, onClick, variant = 'primary', className }: ButtonProps) => {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "px-4 py-2 rounded-lg font-medium transition-colors",
-        variant === 'primary' && "bg-primary text-primary-foreground hover:bg-primary/90",
-        variant === 'secondary' && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
-        className
-      )}
-    >
-      {children}
-    </button>
-  )
-}
-
-export default Button
-EOF
+export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
+  user: null,
+  isAuthenticated: false,
+  login: (token, user) => {
+    localStorage.setItem('token', token)
+    set({ user, isAuthenticated: true })
+  },
+  logout: () => {
+    localStorage.removeItem('token')
+    set({ user: null, isAuthenticated: false })
+  },
+})
 ```
 
-### Task 3: Add shadcn/ui Component
+**Step 2**: Add to main store in `src/stores/index.ts`:
+```tsx
+import { createAuthSlice, AuthSlice } from './slices/authSlice'
+
+export type Store = ApiSlice & UiSlice & TaskSlice & WorkflowSlice & AuthSlice
+
+// Add to store creation
+...createAuthSlice(...args),
+```
+
+### Task 4: Add shadcn/ui Component
 
 ```bash
-# Add button component
 pnpx shadcn@latest add button
-
-# Add card component
 pnpx shadcn@latest add card
 
-# Components are added to src/components/ui/
 # Use in your code:
-```
-
-```tsx
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-
-export const MyPage = () => {
-  return (
-    <Card>
-      <Button>Click Me</Button>
-    </Card>
-  )
-}
-```
-
-### Task 4: Add Environment Variables
-
-```bash
-# 1. Create .env file (already gitignored)
-cat > .env << 'EOF'
-VITE_API_URL=https://api.example.com
-VITE_APP_NAME=My App
-EOF
-
-# 2. Access in code
-```
-
-```tsx
-const apiUrl = import.meta.env.VITE_API_URL
-const appName = import.meta.env.VITE_APP_NAME
-```
-
-### Task 5: Add TanStack Query
-
-```bash
-# 1. Install dependencies
-pnpm add @tanstack/react-query @tanstack/react-query-devtools
-
-# 2. Update main.tsx (see Data Fetching section)
-
-# 3. Use in components
-```
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-
-const { data } = useQuery({
-  queryKey: ['todos'],
-  queryFn: fetchTodos
-})
 ```
 
 ---
@@ -1174,57 +1261,61 @@ const { data } = useQuery({
 
 1. **DO NOT Edit Auto-Generated Files**
    - `src/routes/routeTree.gen.ts` is auto-generated by TanStack Router plugin
-   - VS Code is configured to hide this file (`.vscode/settings.json`)
    - Never manually modify this file
 
 2. **Use pnpm, Not npm/yarn**
-   - Project uses `pnpm@10.19.0` (specified in package.json)
+   - Project uses `pnpm@10.19.0`
    - Commands: `pnpm install`, `pnpm add`, `pnpm dev`
 
 3. **TypeScript Strict Mode**
    - All code must be type-safe
    - No `any` types unless absolutely necessary
-   - Use proper type annotations
+   - Use Zod schemas for type inference
 
 4. **Prefer Editing Over Creating**
    - ALWAYS prefer editing existing files
    - DO NOT create new files unless required
-   - Exception: New routes in `src/routes/`
 
-5. **Tailwind-First Styling**
-   - Use Tailwind utility classes, not custom CSS
-   - Use `cn()` utility for conditional classes
-   - Leverage CSS variables for theming
+5. **Use TanStack Query for Server State**
+   - All API data should use TanStack Query hooks
+   - Use Zustand only for client-side state
+   - Never duplicate server state in Zustand
 
-6. **Component Patterns**
-   - Functional components with hooks
-   - Use `@/` alias for imports (not relative paths)
-   - Export components as default or named
+6. **Validate with Zod**
+   - All API schemas should have Zod validation
+   - Use `safeParse` for runtime validation
+   - Infer TypeScript types from schemas
 
-7. **Git Workflow**
-   - Current branch: `claude/claude-md-mi3wt3hjre4d4hsq-01TogY8r8Z42SbobhnEcji7T`
-   - Always push to this branch
+7. **Follow API Service Pattern**
+   - Create query keys factory
+   - Invalidate related queries on mutations
+   - Export hooks from index.ts
+
+8. **Git Workflow**
+   - Current branch: `claude/claude-md-mi7g0dgho4blc3b7-01SymnBd9oUjixnUYxNjpGRF`
+   - Use `git push -u origin <branch>` for pushing
    - Use descriptive commit messages
 
 ### Common Pitfalls to Avoid
 
-❌ **DON'T**:
+**DON'T**:
 - Use `npm` or `yarn` instead of `pnpm`
 - Edit `routeTree.gen.ts` manually
+- Put server state in Zustand (use TanStack Query)
+- Forget to invalidate queries after mutations
 - Add emojis unless requested
 - Create unnecessary documentation files
-- Use relative imports (`../`) instead of `@/` alias
-- Bypass TypeScript strict checks
-- Write inline styles instead of Tailwind
+- Use relative imports instead of `@/` alias
+- Skip Zod validation in mock handlers
 
-✅ **DO**:
+**DO**:
 - Use `pnpm` for all package operations
-- Let TanStack Router auto-generate route tree
+- Use TanStack Query for all API data
+- Use Zustand for client-only state (theme, UI)
+- Validate all data with Zod schemas
+- Follow query key factory pattern
 - Use `@/` alias for all imports
-- Follow TypeScript strict mode
-- Use Tailwind utilities for styling
-- Use `cn()` helper for class merging
-- Add tests for new components (when applicable)
+- Invalidate related queries after mutations
 
 ### File Modification Guidelines
 
@@ -1235,23 +1326,24 @@ const { data } = useQuery({
 
 **When Adding Features**:
 1. Check if similar functionality exists
-2. Reuse existing components/utilities
-3. Follow established patterns
-4. Update this CLAUDE.md if patterns change
+2. Add Zod schemas for validation
+3. Add MSW handlers for mocking
+4. Create TanStack Query hooks
+5. Follow established patterns
 
 ### Performance Considerations
 
 - **Code Splitting**: Routes are automatically code-split
-- **Bundle Size**: Use tree-shakeable imports
-- **Lazy Loading**: Components can use `React.lazy()`
-- **Web Vitals**: Monitor via `reportWebVitals()`
+- **Query Caching**: Leverage staleTime and gcTime
+- **Selector Hooks**: Use Zustand selectors for performance
+- **Query Keys**: Use factories for proper cache management
 
 ### Security Best Practices
 
-- **Environment Variables**: Use `.env` for secrets (gitignored)
+- **Environment Variables**: Use `.env` for configuration
 - **API Keys**: Never hardcode in source
-- **Input Validation**: Validate user inputs
-- **XSS Prevention**: React escapes by default, but be careful with `dangerouslySetInnerHTML`
+- **Input Validation**: Always validate with Zod
+- **Token Storage**: Handle JWT tokens securely
 
 ---
 
@@ -1273,10 +1365,10 @@ pnpm add -D <package>     # Add dev dependency
 pnpx shadcn@latest add <component>
 
 # Git Operations
-git status                # Check status
-git add .                 # Stage changes
-git commit -m "message"   # Commit
-git push -u origin claude/claude-md-mi3wt3hjre4d4hsq-01TogY8r8Z42SbobhnEcji7T
+git status
+git add .
+git commit -m "message"
+git push -u origin claude/claude-md-mi7g0dgho4blc3b7-01SymnBd9oUjixnUYxNjpGRF
 ```
 
 ---
@@ -1284,30 +1376,39 @@ git push -u origin claude/claude-md-mi3wt3hjre4d4hsq-01TogY8r8Z42SbobhnEcji7T
 ## Additional Resources
 
 - **TanStack Router Docs**: https://tanstack.com/router/latest
+- **TanStack Query Docs**: https://tanstack.com/query/latest
+- **MSW Docs**: https://mswjs.io/docs
+- **Zod Docs**: https://zod.dev
 - **Tailwind CSS Docs**: https://tailwindcss.com/docs
 - **shadcn/ui Components**: https://ui.shadcn.com/
-- **Vitest Docs**: https://vitest.dev/
-- **React 19 Docs**: https://react.dev/
+- **Zustand Docs**: https://zustand-demo.pmnd.rs/
 
 ---
 
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-11-20
 **Maintained By**: AI Assistants (Claude Code)
 
 ---
 
 ## Changelog
 
+### 2025-11-20
+- Major update reflecting current codebase state
+- Added TanStack Query integration documentation
+- Added MSW (Mock Service Worker) documentation
+- Added Zod schema validation documentation
+- Added workflowSlice to Zustand stores
+- Updated API layer documentation with services pattern
+- Added new test pages (msw-test)
+- Updated dependencies and versions
+- Added environment configuration section
+- Added comprehensive API mocking guide
+
 ### 2025-11-18 (Update 2)
 - Implemented Zustand state management with slice pattern
-- Created apiSlice, uiSlice, and taskSlice with comprehensive features
-- Added /zustand-test route with interactive demonstrations
-- Updated navigation to include Zustand test page
-- Added Zustand middleware (devtools, persist)
-- Documented all Zustand patterns and best practices
+- Created apiSlice, uiSlice, and taskSlice
+- Added /zustand-test route
 
 ### 2025-11-18
 - Initial creation of CLAUDE.md
-- Documented all core technologies and patterns
-- Added comprehensive development guidelines
-- Included common tasks and AI assistant rules
+- Documented core technologies and patterns
