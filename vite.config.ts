@@ -9,6 +9,8 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Tauri expects a fixed port, fail if that port is not available
+  clearScreen: false,
   plugins: [
     devtools(),
     tanstackRouter({
@@ -107,6 +109,11 @@ export default defineConfig({
     },
   },
   server: {
+    // Tauri expects a fixed port
+    port: 3000,
+    strictPort: true,
+    // For Tauri mobile development
+    host: process.env.TAURI_DEV_HOST || false,
     proxy: {
       // Proxy /api requests to backend when VITE_API_MODE=real
       // This allows frontend to make requests to /api/* without CORS issues

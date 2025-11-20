@@ -42,6 +42,7 @@ This is a modern React application built with TanStack Router, featuring:
 - **Schema validation** with Zod
 - **Internationalization** with i18next (en, ko, ja)
 - **PWA support** with offline capability
+- **Desktop app** with Tauri 2.0
 - **Development tooling** with Vite for fast HMR
 - **Strict TypeScript** configuration for type safety
 
@@ -74,6 +75,7 @@ This is a modern React application built with TanStack Router, featuring:
 | **Validation** | Zod | 4.1.12 | Schema validation & type inference |
 | **i18n** | i18next | 25.6.3 | Internationalization framework |
 | **PWA** | vite-plugin-pwa | 1.1.0 | Progressive Web App support |
+| **Desktop** | Tauri | 2.9.0 | Cross-platform desktop app framework |
 | **Testing** | Vitest | 3.0.5 | Unit test framework |
 
 ### Key Utilities
@@ -181,6 +183,14 @@ yarn install # Wrong package manager
 │   ├── mockServiceWorker.js, favicon.ico
 │   ├── logo192.png, logo512.png # PWA icons
 │   └── manifest.json           # PWA manifest
+├── src-tauri/                   # Tauri desktop app
+│   ├── src/                    # Rust source code
+│   │   ├── main.rs            # Main entry point
+│   │   └── lib.rs             # App library
+│   ├── capabilities/           # Tauri permissions
+│   ├── icons/                  # App icons
+│   ├── tauri.conf.json        # Tauri configuration
+│   └── Cargo.toml             # Rust dependencies
 ├── prisma/schema.prisma        # Database schema (source of truth)
 ├── vite.config.ts              # Vite build config (includes PWA)
 └── package.json                # Dependencies & scripts
@@ -211,6 +221,8 @@ VITE_ENABLE_DEVTOOLS=true
 | `pnpm build` | Production build |
 | `pnpm serve` | Preview production build |
 | `pnpm test` | Run tests |
+| `pnpm tauri:dev` | Start Tauri desktop app (dev mode) |
+| `pnpm tauri:build` | Build Tauri desktop app |
 
 ---
 
@@ -314,6 +326,85 @@ Included in root layout, provides UI for:
 
 ---
 
+## Tauri Desktop App
+
+### Overview
+
+Build native desktop applications using Tauri 2.0 with the existing React frontend.
+
+### Prerequisites
+
+**Linux** (Ubuntu/Debian):
+```bash
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-dev \
+  build-essential \
+  curl \
+  wget \
+  file \
+  libxdo-dev \
+  libssl-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev
+```
+
+**macOS**:
+```bash
+xcode-select --install
+```
+
+**Windows**:
+- Microsoft Visual Studio C++ Build Tools
+- WebView2 (included with Edge)
+
+### Development
+
+```bash
+# Start desktop app in development mode
+pnpm tauri:dev
+
+# Build production desktop app
+pnpm tauri:build
+```
+
+### Configuration
+
+- **tauri.conf.json** - Main Tauri configuration (window size, app name, etc.)
+- **Cargo.toml** - Rust dependencies
+- **capabilities/default.json** - API permissions for the app
+
+### Tauri API Usage
+
+```tsx
+import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
+
+// Call Rust backend
+const result = await invoke('my_command', { arg: 'value' })
+
+// Use Tauri plugins
+const file = await open({ multiple: false })
+```
+
+### Adding Rust Commands
+
+```rust
+// src-tauri/src/lib.rs
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+pub fn run() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![greet])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+---
+
 ## State Management
 
 ### Zustand Slices
@@ -405,14 +496,21 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 pnpm dev                  # Start dev server
 pnpm build                # Production build
 pnpm test                 # Run tests
+pnpm tauri:dev            # Start Tauri desktop app
+pnpm tauri:build          # Build desktop app
 pnpx shadcn@latest add X  # Add UI component
-
-git push -u origin claude/claude-md-mi7l5ydscdhl78fr-01D9vaQmAhRnKde3E1EdZUji
 ```
 
 ---
 
 ## Changelog
+
+### 2025-11-20 (Update 3)
+- Added Tauri 2.0 for desktop app support
+- Added @tauri-apps/cli and @tauri-apps/api
+- Added src-tauri directory with Rust backend
+- Updated vite.config.ts for Tauri compatibility
+- Added tauri:dev and tauri:build scripts
 
 ### 2025-11-20 (Update 2)
 - Added IndexedDB with Dexie for persistent mock data

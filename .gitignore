@@ -9,3 +9,7 @@ count.txt
 .nitro
 .tanstack
 .wrangler
+
+# Tauri
+src-tauri/target
+src-tauri/gen
