@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Development Guide
 
-**Repository**: mermaidchart-clone
-**Last Updated**: 2025-11-20
+**Repository**: my-spa-template
+**Last Updated**: 2025-11-21
 **Purpose**: Comprehensive guide for AI assistants working on this codebase
 
 ---
@@ -22,9 +22,10 @@
 12. [Schema Validation with Zod](#schema-validation-with-zod)
 13. [Internationalization (i18n)](#internationalization-i18n)
 14. [PWA Support](#pwa-support)
-15. [Testing](#testing)
-16. [Common Tasks](#common-tasks)
-17. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
+15. [Tauri Desktop App](#tauri-desktop-app)
+16. [Testing](#testing)
+17. [Common Tasks](#common-tasks)
+18. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
 
 ---
 
@@ -40,7 +41,7 @@ This is a modern React application built with TanStack Router, featuring:
 - **API mocking** with MSW (Mock Service Worker)
 - **Persistent mock DB** with IndexedDB (Dexie)
 - **Schema validation** with Zod
-- **Internationalization** with i18next (en, ko, ja)
+- **Internationalization** with i18next (en, ko, ja) including type safety, pluralization, and formatting
 - **PWA support** with offline capability
 - **Desktop app** with Tauri 2.0
 - **Development tooling** with Vite for fast HMR
@@ -48,9 +49,9 @@ This is a modern React application built with TanStack Router, featuring:
 
 ### Project Status
 
-- **Current Branch**: `claude/claude-md-mi7l5ydscdhl78fr-01D9vaQmAhRnKde3E1EdZUji`
+- **Current Branch**: `claude/claude-md-mi853hhmav0o4u7n-012SaE9nRtNeZNkMYwoHwLEJ`
 - **Git Status**: Clean (no uncommitted changes)
-- **Last Commit**: `4e73c96 - Merge pull request #18 (IndexedDB mock DB)`
+- **Last Commit**: `17eb898 - Merge pull request #21 (Tauri 2.0 integration)`
 - **Production Ready**: Development environment with full MSW + IndexedDB mocking support
 
 ---
@@ -125,7 +126,7 @@ yarn install # Wrong package manager
 ## Directory Structure
 
 ```
-/home/user/mermaidchart-clone/
+/home/user/my-spa-template/
 ├── src/                          # Main source code
 │   ├── api/                     # API layer
 │   │   ├── client.ts           # API fetch wrapper
@@ -153,9 +154,12 @@ yarn install # Wrong package manager
 │   ├── lib/                     # Utility functions
 │   │   ├── utils.ts            # cn() helper for class merging
 │   │   ├── query-client.ts     # TanStack Query client config
-│   │   └── i18n.ts             # i18next configuration
+│   │   └── i18n.ts             # i18next configuration with formatters
 │   ├── locales/                 # Translation files
-│   │   ├── index.ts, en.json, ko.json, ja.json
+│   │   ├── index.ts            # Re-exports
+│   │   ├── en.json             # English translations
+│   │   ├── ko.json             # Korean translations
+│   │   └── ja.json             # Japanese translations
 │   ├── mocks/                   # MSW mock handlers
 │   │   ├── browser.ts          # MSW browser setup
 │   │   ├── handlers.ts         # API route handlers (uses IndexedDB)
@@ -176,11 +180,14 @@ yarn install # Wrong package manager
 │   ├── test/                    # Test utilities
 │   │   ├── setup.ts            # Vitest setup
 │   │   └── i18n-test-utils.tsx # i18n testing helpers
+│   ├── types/                   # TypeScript type definitions
+│   │   └── i18next.d.ts        # Type-safe i18n key definitions
 │   ├── main.tsx                # App entry point
 │   ├── styles.css              # Global styles + Tailwind config
 │   └── vite-env.d.ts           # Vite type definitions
 ├── public/                      # Static assets
-│   ├── mockServiceWorker.js, favicon.ico
+│   ├── mockServiceWorker.js    # MSW service worker
+│   ├── favicon.ico             # Favicon
 │   ├── logo192.png, logo512.png # PWA icons
 │   └── manifest.json           # PWA manifest
 ├── src-tauri/                   # Tauri desktop app
@@ -226,38 +233,174 @@ VITE_ENABLE_DEVTOOLS=true
 
 ---
 
-## Internationalization (i18n)
+## Code Conventions
 
-### Overview
+### Import Order
 
-Supports **English (en)**, **Korean (ko)**, and **Japanese (ja)** using i18next.
+```tsx
+// 1. React and third-party libraries
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+
+// 2. Internal modules (using @/ alias)
+import { Button } from '@/components/ui/button'
+import { useTheme } from '@/stores'
+
+// 3. Types
+import type { User } from '@/schemas'
+```
+
+### Component Structure
+
+```tsx
+// 1. Type definitions
+interface Props {
+  title: string
+  onSave: () => void
+}
+
+// 2. Component
+export const MyComponent = ({ title, onSave }: Props) => {
+  // Hooks
+  const { t } = useTranslation()
+  const [state, setState] = useState('')
+
+  // Handlers
+  const handleClick = () => {}
+
+  // Render
+  return <div>{t('key')}</div>
+}
+```
+
+---
+
+## Styling Guidelines
+
+### Tailwind CSS v4
+
+Use utility classes with Tailwind CSS v4:
+
+```tsx
+<div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800">
+  <Button variant="primary" className="w-full">
+    {t('common.save')}
+  </Button>
+</div>
+```
+
+### cn() Helper
+
+Use the `cn()` helper for conditional classes:
+
+```tsx
+import { cn } from '@/lib/utils'
+
+<div className={cn(
+  "base-classes",
+  isActive && "active-classes",
+  variant === "primary" && "primary-variant"
+)} />
+```
+
+---
+
+## Routing Patterns
+
+### File-Based Routes
+
+Routes are automatically generated from `src/routes/`:
+
+- `src/routes/index.tsx` → `/`
+- `src/routes/about.tsx` → `/about`
+- `src/routes/users/$id.tsx` → `/users/:id`
+
+### Creating a New Route
+
+```tsx
+// src/routes/my-page.tsx
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/my-page')({
+  component: MyPageComponent,
+})
+
+function MyPageComponent() {
+  return <div>My Page</div>
+}
+```
+
+---
+
+## State Management
+
+### Zustand Slices
+
+- **apiSlice** - API data (users, posts)
+- **uiSlice** - UI state (theme, language, sidebar, modals, notifications)
+- **taskSlice** - Task management
+- **workflowSlice** - Progress tracking
 
 ### Usage
 
 ```tsx
-import { useTranslation } from 'react-i18next'
+import { useTheme, useLanguage, useUiActions } from '@/stores'
 
-export const MyComponent = () => {
-  const { t } = useTranslation()
-  return <h1>{t('page.title')}</h1>
-}
+const theme = useTheme()
+const language = useLanguage()
+const { setTheme, setLanguage } = useUiActions()
 ```
 
-### Changing Language
+### Best Practices
+
+- Use selector hooks for specific state (e.g., `useTheme()` not `useStore()`)
+- Keep server state in TanStack Query, client state in Zustand
+- Language changes in Zustand automatically sync with i18next
+
+---
+
+## Data Fetching & API Layer
+
+### TanStack Query Hooks
 
 ```tsx
-import { useLanguage, useUiActions } from '@/stores'
+import { useItems, useCreateItem } from '@/api/services'
 
-const { setLanguage } = useUiActions()
-setLanguage('ko') // Syncs with i18next automatically
+// Fetch items
+const { data, isLoading, error } = useItems()
+
+// Create item with automatic cache invalidation
+const createMutation = useCreateItem()
+createMutation.mutate({ name: 'New Item', price: 100 })
 ```
 
-### Translation Files
+### API Configuration
 
-Located in `src/locales/`:
-- `en.json` - English
-- `ko.json` - Korean
-- `ja.json` - Japanese
+Toggle between mock and real API:
+
+```bash
+# .env
+VITE_API_MODE=mock  # Uses MSW
+VITE_API_MODE=real  # Uses actual backend
+```
+
+---
+
+## API Mocking with MSW
+
+Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
+
+### Available Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/items` | List items |
+| POST | `/api/items` | Create item |
+| PUT | `/api/items/:id` | Update item |
+| DELETE | `/api/items/:id` | Delete item |
+| GET/POST | `/api/users` | Users CRUD |
+| POST | `/api/auth/login` | Login (admin/admin) |
+| GET | `/api/search` | Search items |
 
 ---
 
@@ -297,6 +440,142 @@ await resetDatabase()
 
 ---
 
+## Schema Validation with Zod
+
+### Usage
+
+```tsx
+import { ItemSchema, CreateItemSchema } from '@/schemas'
+
+// Validate data
+const result = ItemSchema.safeParse(data)
+if (result.success) {
+  // Use result.data
+}
+
+// Type inference
+type Item = z.infer<typeof ItemSchema>
+```
+
+---
+
+## Internationalization (i18n)
+
+### Overview
+
+Supports **English (en)**, **Korean (ko)**, and **Japanese (ja)** using i18next with advanced features:
+
+- **Type-safe translation keys** - Autocomplete and compile-time checking
+- **Pluralization support** - Automatic plural forms
+- **Date/time/number formatting** - Locale-aware formatting using Intl API
+
+### Basic Usage
+
+```tsx
+import { useTranslation } from 'react-i18next'
+
+export const MyComponent = () => {
+  const { t } = useTranslation()
+  return <h1>{t('pages.home.title')}</h1>
+}
+```
+
+### Type-Safe Translations
+
+Translation keys are type-checked via `src/types/i18next.d.ts`:
+
+```tsx
+// Autocomplete and type checking for translation keys
+t('common.save')        // OK
+t('invalid.key')        // TypeScript error
+```
+
+### Pluralization
+
+Use plural forms with the `count` parameter:
+
+```tsx
+// Translation file (en.json)
+{
+  "plurals": {
+    "item_one": "{{count}} item",
+    "item_other": "{{count}} items"
+  }
+}
+
+// Usage
+t('plurals.item', { count: 1 })  // "1 item"
+t('plurals.item', { count: 5 })  // "5 items"
+```
+
+### Date/Time/Number Formatting
+
+Use built-in formatters with the Intl API:
+
+```tsx
+// In translation files
+{
+  "format": {
+    "dateShort": "{{date, dateShort}}",
+    "currency": "{{value, currency}}"
+  }
+}
+
+// Usage
+t('format.dateShort', { date: new Date() })  // "Nov 21, 2025" (en) / "2025년 11월 21일" (ko)
+t('format.currency', { value: 1000 })        // "$1,000.00" (en) / "₩1,000" (ko)
+```
+
+### Available Formatters
+
+| Formatter | Description | Example (en) |
+|-----------|-------------|--------------|
+| `dateShort` | Short date | "Nov 21, 2025" |
+| `dateLong` | Long date with weekday | "Friday, November 21, 2025" |
+| `time` | Time only | "2:30:00 PM" |
+| `dateTime` | Date and time | "Nov 21, 2025, 2:30 PM" |
+| `relativeTime` | Relative time | "in 2 days", "3 hours ago" |
+| `number` | Formatted number | "1,234,567" |
+| `currency` | Currency (auto per language) | "$1,234.56" (en) / "₩1,234" (ko) |
+| `percent` | Percentage | "85%" |
+
+### Helper Functions
+
+Import and use helper functions directly:
+
+```tsx
+import { formatDate, formatNumber } from '@/lib/i18n'
+
+// Format dates
+formatDate(new Date(), 'dateShort')     // "Nov 21, 2025"
+formatDate(new Date(), 'relativeTime')  // "in 2 hours"
+
+// Format numbers
+formatNumber(1234.56, 'number')    // "1,234.56"
+formatNumber(1234.56, 'currency')  // "$1,234.56"
+formatNumber(0.85, 'percent')      // "85%"
+```
+
+### Changing Language
+
+```tsx
+import { useLanguage, useUiActions } from '@/stores'
+
+const { setLanguage } = useUiActions()
+setLanguage('ko') // Syncs with i18next and updates document.lang
+```
+
+### Translation Files
+
+Located in `src/locales/`:
+- `en.json` - English
+- `ko.json` - Korean
+- `ja.json` - Japanese
+
+**Important**: When adding translations, add to ALL locale files.
+
+---
+
 ## PWA Support
 
 ### Overview
@@ -309,11 +588,11 @@ Progressive Web App with offline capability using vite-plugin-pwa.
 import { usePWA } from '@/hooks/usePWA'
 
 const {
-  canInstall,      // Can show install prompt
-  installPrompt,   // Trigger install
-  needRefresh,     // Update available
-  updateServiceWorker, // Apply update
-  isOnline,        // Network status
+  canInstall,           // Can show install prompt
+  installPrompt,        // Trigger install
+  needRefresh,          // Update available
+  updateServiceWorker,  // Apply update
+  isOnline,             // Network status
 } = usePWA()
 ```
 
@@ -405,42 +684,63 @@ pub fn run() {
 
 ---
 
-## State Management
+## Testing
 
-### Zustand Slices
+### Running Tests
 
-- **apiSlice** - API data (users, posts)
-- **uiSlice** - UI state (theme, language, sidebar, modals)
-- **taskSlice** - Task management
-- **workflowSlice** - Progress tracking
+```bash
+pnpm test
+```
 
-### Usage
+### Test Structure
 
 ```tsx
-import { useTheme, useLanguage, useUiActions } from '@/stores'
+// src/components/__tests__/MyComponent.test.tsx
+import { render, screen } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 
-const theme = useTheme()
-const language = useLanguage()
-const { setTheme, setLanguage } = useUiActions()
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    render(<MyComponent />)
+    expect(screen.getByText('Hello')).toBeInTheDocument()
+  })
+})
+```
+
+### i18n Testing
+
+Use the test utilities for i18n testing:
+
+```tsx
+import { renderWithI18n } from '@/test/i18n-test-utils'
+
+it('renders translated text', () => {
+  renderWithI18n(<MyComponent />)
+  expect(screen.getByText('Welcome')).toBeInTheDocument()
+})
 ```
 
 ---
 
-## API Mocking with MSW
+## Common Tasks
 
-Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
+### Adding a New Page
 
-### Available Endpoints
+1. Create route file in `src/routes/`
+2. Add translations to all locale files
+3. Add navigation link in Header if needed
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/items` | List items |
-| POST | `/api/items` | Create item |
-| PUT | `/api/items/:id` | Update item |
-| DELETE | `/api/items/:id` | Delete item |
-| GET/POST | `/api/users` | Users CRUD |
-| POST | `/api/auth/login` | Login (admin/admin) |
-| GET | `/api/search` | Search items |
+### Adding a New API Endpoint
+
+1. Add MSW handler in `src/mocks/handlers.ts`
+2. Create TanStack Query hook in `src/api/services/`
+3. Add Zod schema in `src/schemas/`
+
+### Adding a UI Component
+
+```bash
+pnpx shadcn@latest add [component-name]
+```
 
 ---
 
@@ -481,12 +781,15 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 - Hardcode text (use i18n)
 - Skip Zod validation
 - Forget translations in ALL locale files
+- Ignore type safety for i18n keys
 
 **DO**:
 - Use `@/` alias for imports
 - Invalidate queries after mutations
 - Add translations to en.json, ko.json, ja.json
 - Use selector hooks for Zustand
+- Use type-safe translation keys
+- Format dates/numbers using the provided formatters
 
 ---
 
@@ -504,6 +807,19 @@ pnpx shadcn@latest add X  # Add UI component
 ---
 
 ## Changelog
+
+### 2025-11-21
+- Updated repository name to my-spa-template
+- Updated project status with latest branch and commit
+- Added comprehensive i18n Advanced Features section:
+  - Type-safe translation keys with `i18next.d.ts`
+  - Pluralization patterns documentation
+  - Date/time/number formatting with Intl API
+  - Helper functions (`formatDate`, `formatNumber`)
+  - Available formatters table
+- Added `src/types/` directory to structure
+- Improved Code Conventions section
+- Improved Testing section with i18n testing utilities
 
 ### 2025-11-20 (Update 3)
 - Added Tauri 2.0 for desktop app support
