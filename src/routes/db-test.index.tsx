@@ -12,7 +12,7 @@ import { apiClient } from '@/api/client'
 import type { ContentEntity } from '@/db'
 import { saveDraft, getDraft, deleteDraft } from '@/db'
 
-export const Route = createFileRoute('/db-test')({
+export const Route = createFileRoute('/db-test/')({
   component: DbTestPage,
 })
 
@@ -92,7 +92,7 @@ function DbTestPage() {
   }
 
   const copyShareUrl = (item: Content) => {
-    const url = `${window.location.origin}/db-test/${item.alias}`
+    const url = `${window.location.origin}/db-test/${item.id}`
     navigator.clipboard.writeText(url)
     setCopiedId(item.id)
     setTimeout(() => setCopiedId(null), 2000)
@@ -181,7 +181,7 @@ function DbTestPage() {
                 </div>
                 <p className="text-gray-600 mb-3 line-clamp-2">{item.content}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Link to="/db-test/$id" params={{ id: item.alias }}>
+                  <Link to="/db-test/$id" params={{ id: item.id.toString() }}>
                     <Button variant="outline" size="sm" className="flex items-center gap-1">
                       <ExternalLink size={14} />
                       {t('pages.dbTest.view')}
@@ -207,7 +207,7 @@ function DbTestPage() {
                   </Button>
                 </div>
                 <div className="mt-2 text-xs text-gray-400">
-                  ID: {item.id} | Alias: {item.alias}
+                  ID: {item.id}
                 </div>
               </div>
             ))}
