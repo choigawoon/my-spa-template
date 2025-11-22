@@ -407,21 +407,16 @@ export const handlers = [
     })
   }),
 
-  // Contents - Get by ID or alias
-  http.get('/api/contents/:identifier', async ({ params }) => {
-    const { identifier } = params
-    let content
+  // Contents - Get by ID
+  http.get('/api/contents/:id', async ({ params }) => {
+    const { id } = params
+    const contentId = parseInt(id as string)
 
-    // Try to parse as number (ID)
-    const id = parseInt(identifier as string)
-    if (!isNaN(id)) {
-      content = await db.contents.get(id)
+    if (isNaN(contentId)) {
+      return httpErrorResponse('Invalid content ID', 400)
     }
 
-    // If not found by ID, try by alias
-    if (!content) {
-      content = await db.contents.where('alias').equals(identifier as string).first()
-    }
+    const content = await db.contents.get(contentId)
 
     if (!content) {
       return httpErrorResponse('Content not found', 404)

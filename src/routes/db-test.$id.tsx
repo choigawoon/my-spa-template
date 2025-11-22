@@ -23,7 +23,7 @@ function SharedContentPage() {
   const { id } = Route.useParams()
   const [copied, setCopied] = useState(false)
 
-  // Fetch content by ID or alias
+  // Fetch content by ID
   const { data, isLoading, error } = useQuery({
     queryKey: ['content', id],
     queryFn: () => apiClient.get<Content>(`/api/contents/${id}`),
@@ -121,12 +121,6 @@ function SharedContentPage() {
             </div>
             <div className="mt-3 text-xs text-gray-400">
               <p>ID: {data.id}</p>
-              <p>Alias: {data.alias}</p>
-              <p>{t('pages.dbTest.accessVia')}:</p>
-              <ul className="list-disc list-inside ml-2">
-                <li>/db-test/{data.id}</li>
-                <li>/db-test/{data.alias}</li>
-              </ul>
             </div>
           </div>
         </CardContent>
