@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Development Guide
 
 **Repository**: my-spa-template
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-22
 **Purpose**: Comprehensive guide for AI assistants working on this codebase
 
 ---
@@ -17,15 +17,16 @@
 7. [Routing Patterns](#routing-patterns)
 8. [State Management](#state-management)
 9. [Data Fetching & API Layer](#data-fetching--api-layer)
-10. [API Mocking with MSW](#api-mocking-with-msw)
-11. [IndexedDB with Dexie](#indexeddb-with-dexie)
-12. [Schema Validation with Zod](#schema-validation-with-zod)
-13. [Internationalization (i18n)](#internationalization-i18n)
-14. [PWA Support](#pwa-support)
-15. [Tauri Desktop App](#tauri-desktop-app)
-16. [Testing](#testing)
-17. [Common Tasks](#common-tasks)
-18. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
+10. [Storage Architecture](#storage-architecture)
+11. [API Mocking with MSW](#api-mocking-with-msw)
+12. [Mock Database (IndexedDB)](#mock-database-indexeddb)
+13. [Schema Validation with Zod](#schema-validation-with-zod)
+14. [Internationalization (i18n)](#internationalization-i18n)
+15. [PWA Support](#pwa-support)
+16. [Tauri Desktop App](#tauri-desktop-app)
+17. [Testing](#testing)
+18. [Common Tasks](#common-tasks)
+19. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
 
 ---
 
@@ -49,10 +50,10 @@ This is a modern React application built with TanStack Router, featuring:
 
 ### Project Status
 
-- **Current Branch**: `claude/claude-md-mi853hhmav0o4u7n-012SaE9nRtNeZNkMYwoHwLEJ`
+- **Current Branch**: `claude/separate-db-storage-019pzDmAqkQcjXvSgKPG3o4F`
 - **Git Status**: Clean (no uncommitted changes)
-- **Last Commit**: `17eb898 - Merge pull request #21 (Tauri 2.0 integration)`
-- **Production Ready**: Development environment with full MSW + IndexedDB mocking support
+- **Last Commit**: `85e67cd - Merge pull request #22`
+- **Architecture**: Separated mock DB (browser) from real backend DB for easy transition
 
 ---
 
@@ -146,8 +147,12 @@ yarn install # Wrong package manager
 │   │       ├── alert.tsx, badge.tsx, button.tsx, card.tsx
 │   │       ├── dialog.tsx, input.tsx, label.tsx, progress.tsx
 │   │       ├── select.tsx, separator.tsx, sheet.tsx
-│   ├── db/                      # IndexedDB database
-│   │   └── index.ts            # Dexie setup, entities, seed data
+│   ├── db/                      # Database layer
+│   │   ├── index.ts            # Entry point (re-exports from mock/)
+│   │   └── mock/               # Browser mock database (IndexedDB)
+│   │       ├── index.ts        # Dexie setup, lifecycle functions
+│   │       ├── entities.ts     # Entity type definitions
+│   │       └── seed.ts         # Seed data for development
 │   ├── hooks/                   # Custom React hooks
 │   │   ├── index.ts            # Re-exports
 │   │   └── usePWA.ts           # PWA installation & update hook
@@ -386,6 +391,59 @@ VITE_API_MODE=real  # Uses actual backend
 
 ---
 
+## Storage Architecture
+
+This project separates **browser mock storage** (for development) from **backend storage** (for production) to enable full-stack mock development that easily transitions to real backend integration.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Storage Architecture                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  MOCK MODE (VITE_API_MODE=mock)                             │
+│  ┌─────────────┐     ┌─────────┐     ┌──────────────────┐   │
+│  │ React App   │ ──► │   MSW   │ ──► │ IndexedDB (Mock) │   │
+│  └─────────────┘     └─────────┘     │ src/db/mock/     │   │
+│                                       └──────────────────┘   │
+│                                                              │
+│  REAL MODE (VITE_API_MODE=real)                             │
+│  ┌─────────────┐     ┌─────────┐     ┌──────────────────┐   │
+│  │ React App   │ ──► │   API   │ ──► │ Backend Database │   │
+│  └─────────────┘     └─────────┘     │ (PostgreSQL/etc) │   │
+│                                       └──────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Directory Purpose
+
+| Directory | Purpose | Used When |
+|-----------|---------|-----------|
+| `src/db/mock/` | Browser IndexedDB mock storage | `VITE_API_MODE=mock` |
+| `src/schemas/` | API contract definitions (shared) | Both modes |
+| `src/api/services/` | TanStack Query hooks | Both modes |
+| `src/mocks/` | MSW request handlers | `VITE_API_MODE=mock` |
+
+### Key Design Principles
+
+1. **Clear Separation**: Mock DB (`src/db/mock/`) is isolated and only used in mock mode
+2. **Shared Contracts**: Zod schemas define API contracts used by both mock and real modes
+3. **Easy Transition**: Switch from mock to real by changing `VITE_API_MODE` environment variable
+4. **Persistent Mock Data**: IndexedDB persists across page reloads for realistic testing
+
+### Transitioning to Real Backend
+
+When ready to connect to a real backend:
+
+1. Set `VITE_API_MODE=real` in `.env`
+2. Configure `VITE_API_BASE_URL` to point to your backend
+3. The `src/db/mock/` folder is no longer used
+4. API services automatically connect to real endpoints
+5. Backend manages its own database (PostgreSQL, MySQL, etc.)
+
+---
+
 ## API Mocking with MSW
 
 Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
@@ -404,19 +462,32 @@ Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
 
 ---
 
-## IndexedDB with Dexie
+## Mock Database (IndexedDB)
 
 ### Overview
 
-Uses **Dexie.js** for persistent mock data storage in IndexedDB.
+Uses **Dexie.js** for persistent mock data storage in IndexedDB. This is a **browser-side mock database** used only when `VITE_API_MODE=mock`.
 
-### Database Setup
+**Important**: This mock database is NOT used when connecting to a real backend. It exists solely for frontend development and testing without backend dependencies.
+
+### File Structure
+
+```
+src/db/
+├── index.ts              # Entry point (re-exports from mock/)
+└── mock/
+    ├── index.ts          # Database class, lifecycle functions
+    ├── entities.ts       # Entity type definitions (ItemEntity, UserEntity)
+    └── seed.ts           # Initial seed data for development
+```
+
+### Database Usage
 
 ```tsx
-// src/db/index.ts
+// Import from @/db (automatically uses mock/ in mock mode)
 import { db, initializeDatabase, resetDatabase } from '@/db'
 
-// Query
+// Query items
 const items = await db.items.toArray()
 const item = await db.items.get(1)
 
@@ -429,14 +500,57 @@ await db.items.put({ id: 1, ...updatedData })
 // Delete
 await db.items.delete(1)
 
-// Reset to seed data
+// Reset to seed data (useful for testing)
 await resetDatabase()
+```
+
+### Entity Types
+
+Located in `src/db/mock/entities.ts`:
+
+```tsx
+interface ItemEntity {
+  id?: number
+  name: string
+  description: string
+  price: number
+  category: string
+  created_at: string
+  updated_at: string
+}
+
+interface UserEntity {
+  id?: number
+  email: string
+  username: string
+  full_name: string
+  is_active: boolean
+  created_at: string
+}
 ```
 
 ### Tables
 
 - **items**: id, name, description, price, category, created_at, updated_at
 - **users**: id, email, username, full_name, is_active, created_at
+
+### Seed Data
+
+Located in `src/db/mock/seed.ts`. Pre-populated with:
+- 3 sample items (노트북, 마우스, 키보드)
+- 2 sample users (홍길동, 김철수)
+
+### When Mock DB is Used
+
+- MSW handlers read/write to IndexedDB via `db` instance
+- Only active when `VITE_API_MODE=mock`
+- Data persists across page reloads (unlike in-memory mocks)
+
+### When Mock DB is NOT Used
+
+- When `VITE_API_MODE=real`, all API calls go to actual backend
+- Backend manages its own database (PostgreSQL, MySQL, etc.)
+- The `src/db/mock/` folder is completely bypassed
 
 ---
 
@@ -807,6 +921,16 @@ pnpx shadcn@latest add X  # Add UI component
 ---
 
 ## Changelog
+
+### 2025-11-22
+- **Separated mock DB from real backend storage architecture**:
+  - Created `src/db/mock/` directory for browser-side IndexedDB
+  - Split database code into `entities.ts`, `seed.ts`, and `index.ts`
+  - Added comprehensive Storage Architecture documentation
+  - Clear distinction between mock mode and real backend mode
+- Added new "Storage Architecture" section with visual diagram
+- Updated "IndexedDB with Dexie" section to "Mock Database (IndexedDB)"
+- Improved documentation for transitioning from mock to real backend
 
 ### 2025-11-21
 - Updated repository name to my-spa-template
