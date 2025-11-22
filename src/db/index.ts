@@ -1,58 +1,110 @@
 /**
  * Database Layer Entry Point
  *
- * This module provides a unified entry point for database operations,
- * abstracting the difference between mock (browser) and real (backend) databases.
+ * This module provides two separate IndexedDB databases:
+ *
+ * ## 1. Backend Mock Database (BackendMockDB)
+ * - Location: src/db/backend/
+ * - Purpose: Mock backend API data during development
+ * - Used by: MSW handlers
+ * - In production: NOT used (replaced by real backend API)
+ *
+ * ## 2. Frontend Database (FrontendDB)
+ * - Location: src/db/frontend/
+ * - Purpose: Store frontend-only data
+ * - Used by: Components, state management, PWA
+ * - In production: STILL used (persists in browser)
  *
  * ## Storage Architecture
  *
- * ### Mock Mode (VITE_API_MODE=mock)
- * - Uses IndexedDB via Dexie.js in the browser
- * - Data persists across page reloads
- * - MSW handlers use this for realistic mock API behavior
- * - Location: src/db/mock/
- *
- * ### Real Mode (VITE_API_MODE=real)
- * - Connects to actual backend API
- * - Backend manages its own database (PostgreSQL, MySQL, etc.)
- * - This module's exports are NOT used in real mode
- * - Data schemas in src/schemas/ define the API contract
+ * ```
+ * IndexedDB
+ * ├── BackendMockDB          # Mock mode only
+ * │   ├── items              → Backend PostgreSQL
+ * │   └── users              → Backend PostgreSQL
+ * │
+ * └── FrontendDB             # Always used
+ *     ├── settings           # User preferences
+ *     ├── drafts             # Unsaved work
+ *     ├── cache              # Performance cache
+ *     └── recentItems        # View history
+ * ```
  *
  * ## Usage
  *
  * ```typescript
- * // Import database utilities (only used in mock mode)
- * import { db, initializeDatabase, resetDatabase } from '@/db'
+ * // Backend mock data (only in mock mode)
+ * import { backendDb, initializeBackendDb } from '@/db'
  *
- * // Query mock database
- * const items = await db.items.toArray()
- *
- * // Reset to seed data
- * await resetDatabase()
+ * // Frontend local data (always available)
+ * import { frontendDb, getSetting, setSetting } from '@/db'
  * ```
- *
- * ## Important Notes
- *
- * - These exports are ONLY used by MSW handlers in mock mode
- * - When using real backend, API services fetch from actual endpoints
- * - The src/schemas/ folder defines shared types for both modes
  */
 
 // =============================================================================
-// Re-export from Mock Database
+// Backend Mock Database Exports (for MSW handlers)
 // =============================================================================
 
-// Database instance and lifecycle functions
 export {
-  db,
-  MockAppDatabase,
+  // Database instance
+  backendDb,
+  db, // Legacy alias
+  BackendMockDatabase,
+
+  // Lifecycle functions
+  initializeBackendDb,
+  clearBackendDb,
+  resetBackendDb,
+
+  // Legacy aliases
   initializeDatabase,
   clearDatabase,
   resetDatabase,
-} from './mock'
+} from './backend'
 
 // Entity types
-export type { ItemEntity, UserEntity } from './mock'
+export type { ItemEntity, UserEntity } from './backend'
 
-// For backwards compatibility, also export the class as AppDatabase
-export { MockAppDatabase as AppDatabase } from './mock'
+// =============================================================================
+// Frontend Database Exports (for components & state)
+// =============================================================================
+
+export {
+  // Database instance
+  frontendDb,
+  FrontendDatabase,
+
+  // Settings helpers
+  getSetting,
+  setSetting,
+  deleteSetting,
+
+  // Draft helpers
+  saveDraft,
+  getDraft,
+  deleteDraft,
+  getDraftsByType,
+
+  // Cache helpers
+  getCache,
+  setCache,
+  clearExpiredCache,
+  clearAllCache,
+
+  // Recent items helpers
+  addRecentItem,
+  getRecentItems,
+  clearRecentItems,
+
+  // Lifecycle functions
+  initializeFrontendDb,
+  clearFrontendDb,
+} from './frontend'
+
+// Entity types
+export type {
+  SettingsEntity,
+  DraftEntity,
+  CacheEntity,
+  RecentItemEntity,
+} from './frontend'

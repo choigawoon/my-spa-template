@@ -19,7 +19,7 @@
 9. [Data Fetching & API Layer](#data-fetching--api-layer)
 10. [Storage Architecture](#storage-architecture)
 11. [API Mocking with MSW](#api-mocking-with-msw)
-12. [Mock Database (IndexedDB)](#mock-database-indexeddb)
+12. [IndexedDB Databases](#indexeddb-databases)
 13. [Schema Validation with Zod](#schema-validation-with-zod)
 14. [Internationalization (i18n)](#internationalization-i18n)
 15. [PWA Support](#pwa-support)
@@ -147,12 +147,15 @@ yarn install # Wrong package manager
 │   │       ├── alert.tsx, badge.tsx, button.tsx, card.tsx
 │   │       ├── dialog.tsx, input.tsx, label.tsx, progress.tsx
 │   │       ├── select.tsx, separator.tsx, sheet.tsx
-│   ├── db/                      # Database layer
-│   │   ├── index.ts            # Entry point (re-exports from mock/)
-│   │   └── mock/               # Browser mock database (IndexedDB)
-│   │       ├── index.ts        # Dexie setup, lifecycle functions
-│   │       ├── entities.ts     # Entity type definitions
-│   │       └── seed.ts         # Seed data for development
+│   ├── db/                      # Database layer (IndexedDB)
+│   │   ├── index.ts            # Entry point (exports both DBs)
+│   │   ├── backend/            # Backend mock DB (replaced in production)
+│   │   │   ├── index.ts        # BackendMockDB class & functions
+│   │   │   ├── entities.ts     # items, users entities
+│   │   │   └── seed.ts         # Development seed data
+│   │   └── frontend/           # Frontend local DB (persists in production)
+│   │       ├── index.ts        # FrontendDB class & helpers
+│   │       └── entities.ts     # settings, drafts, cache entities
 │   ├── hooks/                   # Custom React hooks
 │   │   ├── index.ts            # Re-exports
 │   │   └── usePWA.ts           # PWA installation & update hook
@@ -393,44 +396,54 @@ VITE_API_MODE=real  # Uses actual backend
 
 ## Storage Architecture
 
-This project separates **browser mock storage** (for development) from **backend storage** (for production) to enable full-stack mock development that easily transitions to real backend integration.
+This project uses **two separate IndexedDB databases** to logically separate backend mock data from frontend-only data.
 
-### Architecture Overview
+### Two Database Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Storage Architecture                      │
+│                    IndexedDB Storage                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  MOCK MODE (VITE_API_MODE=mock)                             │
-│  ┌─────────────┐     ┌─────────┐     ┌──────────────────┐   │
-│  │ React App   │ ──► │   MSW   │ ──► │ IndexedDB (Mock) │   │
-│  └─────────────┘     └─────────┘     │ src/db/mock/     │   │
-│                                       └──────────────────┘   │
+│  BackendMockDB (src/db/backend/)                            │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ items, users                                          │   │
+│  │ → Used by MSW handlers                                │   │
+│  │ → Replaced by real backend API in production          │   │
+│  └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│  REAL MODE (VITE_API_MODE=real)                             │
-│  ┌─────────────┐     ┌─────────┐     ┌──────────────────┐   │
-│  │ React App   │ ──► │   API   │ ──► │ Backend Database │   │
-│  └─────────────┘     └─────────┘     │ (PostgreSQL/etc) │   │
-│                                       └──────────────────┘   │
+│  FrontendDB (src/db/frontend/)                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ settings, drafts, cache, recentItems                  │   │
+│  │ → Used by components & state management               │   │
+│  │ → Persists in browser even in production              │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Data Flow by Mode
+
+| Mode | Backend Data | Frontend Data |
+|------|--------------|---------------|
+| **Mock** (`VITE_API_MODE=mock`) | BackendMockDB → MSW | FrontendDB |
+| **Production** (`VITE_API_MODE=real`) | Real API → PostgreSQL | FrontendDB |
+
 ### Directory Purpose
 
-| Directory | Purpose | Used When |
-|-----------|---------|-----------|
-| `src/db/mock/` | Browser IndexedDB mock storage | `VITE_API_MODE=mock` |
-| `src/schemas/` | API contract definitions (shared) | Both modes |
-| `src/api/services/` | TanStack Query hooks | Both modes |
-| `src/mocks/` | MSW request handlers | `VITE_API_MODE=mock` |
+| Directory | Database | Purpose | Production |
+|-----------|----------|---------|------------|
+| `src/db/backend/` | BackendMockDB | Mock API data (items, users) | **NOT used** |
+| `src/db/frontend/` | FrontendDB | Local data (settings, drafts) | **Still used** |
+| `src/schemas/` | - | API contracts | Both modes |
+| `src/mocks/` | - | MSW handlers | Mock only |
 
 ### Key Design Principles
 
-1. **Clear Separation**: Mock DB (`src/db/mock/`) is isolated and only used in mock mode
-2. **Shared Contracts**: Zod schemas define API contracts used by both mock and real modes
-3. **Easy Transition**: Switch from mock to real by changing `VITE_API_MODE` environment variable
-4. **Persistent Mock Data**: IndexedDB persists across page reloads for realistic testing
+1. **Logical Separation**: Two IndexedDB databases for different purposes
+2. **Clear Lifecycle**: BackendMockDB is temporary, FrontendDB is permanent
+3. **Easy Transition**: Switch to real backend without losing local data
+4. **Type Safety**: Separate entity types for each database
 
 ### Transitioning to Real Backend
 
@@ -438,9 +451,9 @@ When ready to connect to a real backend:
 
 1. Set `VITE_API_MODE=real` in `.env`
 2. Configure `VITE_API_BASE_URL` to point to your backend
-3. The `src/db/mock/` folder is no longer used
-4. API services automatically connect to real endpoints
-5. Backend manages its own database (PostgreSQL, MySQL, etc.)
+3. `BackendMockDB` is no longer used (can be deleted from IndexedDB)
+4. `FrontendDB` continues working (settings, drafts preserved)
+5. API services automatically connect to real endpoints
 
 ---
 
@@ -462,95 +475,106 @@ Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
 
 ---
 
-## Mock Database (IndexedDB)
+## IndexedDB Databases
 
 ### Overview
 
-Uses **Dexie.js** for persistent mock data storage in IndexedDB. This is a **browser-side mock database** used only when `VITE_API_MODE=mock`.
-
-**Important**: This mock database is NOT used when connecting to a real backend. It exists solely for frontend development and testing without backend dependencies.
+Uses **Dexie.js** for two separate IndexedDB databases with different lifecycles.
 
 ### File Structure
 
 ```
 src/db/
-├── index.ts              # Entry point (re-exports from mock/)
-└── mock/
-    ├── index.ts          # Database class, lifecycle functions
-    ├── entities.ts       # Entity type definitions (ItemEntity, UserEntity)
-    └── seed.ts           # Initial seed data for development
+├── index.ts              # Entry point (exports both DBs)
+├── backend/              # Backend mock data (NOT used in production)
+│   ├── index.ts          # BackendMockDB class
+│   ├── entities.ts       # ItemEntity, UserEntity
+│   └── seed.ts           # Development seed data
+└── frontend/             # Frontend local data (ALWAYS used)
+    ├── index.ts          # FrontendDB class & helpers
+    └── entities.ts       # SettingsEntity, DraftEntity, etc.
 ```
 
-### Database Usage
+---
+
+### BackendMockDB (src/db/backend/)
+
+**Purpose**: Mock backend API data during development
 
 ```tsx
-// Import from @/db (automatically uses mock/ in mock mode)
-import { db, initializeDatabase, resetDatabase } from '@/db'
+import { backendDb, initializeBackendDb, resetBackendDb } from '@/db'
 
-// Query items
-const items = await db.items.toArray()
-const item = await db.items.get(1)
+// Query (used by MSW handlers)
+const items = await backendDb.items.toArray()
+const item = await backendDb.items.get(1)
 
 // Create
-const id = await db.items.add({ name: 'New Item', ... })
+const id = await backendDb.items.add({ name: 'New Item', ... })
 
 // Update
-await db.items.put({ id: 1, ...updatedData })
+await backendDb.items.put({ id: 1, ...updatedData })
 
 // Delete
-await db.items.delete(1)
+await backendDb.items.delete(1)
 
-// Reset to seed data (useful for testing)
-await resetDatabase()
+// Reset to seed data
+await resetBackendDb()
 ```
 
-### Entity Types
-
-Located in `src/db/mock/entities.ts`:
-
-```tsx
-interface ItemEntity {
-  id?: number
-  name: string
-  description: string
-  price: number
-  category: string
-  created_at: string
-  updated_at: string
-}
-
-interface UserEntity {
-  id?: number
-  email: string
-  username: string
-  full_name: string
-  is_active: boolean
-  created_at: string
-}
-```
-
-### Tables
-
+**Tables**:
 - **items**: id, name, description, price, category, created_at, updated_at
 - **users**: id, email, username, full_name, is_active, created_at
 
-### Seed Data
-
-Located in `src/db/mock/seed.ts`. Pre-populated with:
+**Seed Data** (src/db/backend/seed.ts):
 - 3 sample items (노트북, 마우스, 키보드)
 - 2 sample users (홍길동, 김철수)
 
-### When Mock DB is Used
+---
 
-- MSW handlers read/write to IndexedDB via `db` instance
-- Only active when `VITE_API_MODE=mock`
-- Data persists across page reloads (unlike in-memory mocks)
+### FrontendDB (src/db/frontend/)
 
-### When Mock DB is NOT Used
+**Purpose**: Store frontend-only data that persists in production
 
-- When `VITE_API_MODE=real`, all API calls go to actual backend
-- Backend manages its own database (PostgreSQL, MySQL, etc.)
-- The `src/db/mock/` folder is completely bypassed
+```tsx
+import {
+  frontendDb,
+  getSetting, setSetting,
+  saveDraft, getDraft,
+  setCache, getCache,
+  addRecentItem, getRecentItems
+} from '@/db'
+
+// Settings
+await setSetting('theme', 'dark')
+const theme = await getSetting<string>('theme')
+
+// Drafts
+const draftId = await saveDraft('item', { name: 'Draft Item' }, itemId)
+const draft = await getDraft('item', itemId)
+
+// Cache (with TTL)
+await setCache('searchResults', results, 5 * 60 * 1000) // 5 min
+const cached = await getCache<SearchResults>('searchResults')
+
+// Recent Items
+await addRecentItem('item', 123)
+const recent = await getRecentItems('item', 10)
+```
+
+**Tables**:
+- **settings**: User preferences (theme, language)
+- **drafts**: Unsaved work, offline edits
+- **cache**: Performance optimization cache
+- **recentItems**: Recently viewed items
+
+---
+
+### Usage Summary
+
+| Database | Import | Used By | In Production |
+|----------|--------|---------|---------------|
+| BackendMockDB | `backendDb` | MSW handlers | ❌ Not used |
+| FrontendDB | `frontendDb` | Components, hooks | ✅ Still used |
 
 ---
 
@@ -923,14 +947,14 @@ pnpx shadcn@latest add X  # Add UI component
 ## Changelog
 
 ### 2025-11-22
-- **Separated mock DB from real backend storage architecture**:
-  - Created `src/db/mock/` directory for browser-side IndexedDB
-  - Split database code into `entities.ts`, `seed.ts`, and `index.ts`
-  - Added comprehensive Storage Architecture documentation
-  - Clear distinction between mock mode and real backend mode
-- Added new "Storage Architecture" section with visual diagram
-- Updated "IndexedDB with Dexie" section to "Mock Database (IndexedDB)"
-- Improved documentation for transitioning from mock to real backend
+- **Two-database architecture for logical separation**:
+  - Created `src/db/backend/` for BackendMockDB (API mock data)
+  - Created `src/db/frontend/` for FrontendDB (local persistent data)
+  - BackendMockDB: items, users (replaced by real backend in production)
+  - FrontendDB: settings, drafts, cache, recentItems (persists in production)
+- Added comprehensive Storage Architecture documentation with diagrams
+- Added helper functions for frontend DB (getSetting, saveDraft, setCache, etc.)
+- Clear distinction between temporary mock data and permanent local data
 
 ### 2025-11-21
 - Updated repository name to my-spa-template
