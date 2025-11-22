@@ -40,24 +40,29 @@
 - **Vitest**: 빠른 단위 테스트 환경
 - **TypeScript**: 엄격한 타입 체크
 
-### 🚧 추가 예정 기능
-
 #### 6. 다국어 지원 (i18n)
-- **다국어 처리 기반**: 언어 전환 및 번역 파일 관리 구조
-- **타입 안전 번역**: 번역 키의 타입 체크 지원
-- **동적 언어 로딩**: 필요한 언어만 로드하여 번들 크기 최적화
+- **다국어 처리**: 한국어, 영어, 일본어 지원 (i18next)
+- **타입 안전 번역**: 번역 키의 TypeScript 타입 체크
+- **날짜/숫자 포맷팅**: Intl API 기반 로케일 인식 포맷터
+- **복수형 지원**: 자동 복수형 처리
 
 #### 7. PWA 지원
-- **Service Worker**: 오프라인 지원 및 캐싱 전략
-- **Web App Manifest**: 설치 가능한 앱으로 변환
-- **오프라인 폴백**: 네트워크 오류 시 기본 페이지 제공
-- **앱 아이콘**: 다양한 크기의 아이콘 세트
+- **Service Worker**: Workbox 기반 오프라인 지원 및 캐싱
+- **설치 가능 앱**: Web App Manifest로 홈 화면에 설치
+- **자동 업데이트**: 새 버전 감지 및 업데이트 알림
+- **오프라인 지표**: 네트워크 상태 표시
 
-#### 8. Tauri 통합 준비
-- **RPC 기반 통합**: Tauri의 invoke 시스템과 통합할 수 있는 구조
-- **타입 안전 RPC**: 프론트엔드-백엔드 간 타입 안전 통신
-- **네이티브 기능 접근**: 파일 시스템, 시스템 정보 등 네이티브 API 래퍼
-- **크로스 플랫폼**: Windows, macOS, Linux 데스크톱 앱 빌드 지원
+#### 8. Tauri 데스크톱 앱
+- **네이티브 앱**: Windows, macOS, Linux 크로스 플랫폼 빌드
+- **타입 안전 RPC**: Rust 백엔드와 타입 안전 통신
+- **작은 번들**: Electron 대비 훨씬 작은 앱 크기
+- **네이티브 API**: 파일 시스템, 다이얼로그 등 시스템 기능 접근
+
+#### 9. 이중 데이터베이스 아키텍처
+- **BackendMockDB**: 프로덕션에서 실제 백엔드 DB로 대체될 API 모킹 데이터
+- **FrontendDB**: 프로덕션에서도 브라우저에 유지되는 로컬 데이터 (설정, 드래프트, 캐시)
+- **쉬운 전환**: 환경 변수 변경만으로 mock → real 백엔드 전환
+- **DB 테스트 페이지**: 콘텐츠 생성/공유 데모로 아키텍처 테스트
 
 ## Getting Started
 ```bash
@@ -70,12 +75,18 @@ pnpm dev            # http://localhost:3000
 - `pnpm build` : 프로덕션 빌드 + 타입체크
 - `pnpm serve` : 빌드 결과 확인
 - `pnpm test` : Vitest
+- `pnpm tauri:dev` : Tauri 데스크톱 앱 개발 모드
+- `pnpm tauri:build` : Tauri 데스크톱 앱 빌드
 
 ## Frontend Stack
 - **Routing**: `src/routes/**` 파일 기반 + `routeTree.gen.ts`
 - **State**: Zustand slice 패턴 (`src/stores/**`)
 - **API**: Fetch wrapper & React Query (`src/api/**`)
 - **Mock**: MSW + Zod 검증 (`src/mocks/**`)
+- **Database**: Dexie IndexedDB (`src/db/**`)
+  - `src/db/backend/` - API 모킹용 BackendMockDB
+  - `src/db/frontend/` - 로컬 데이터용 FrontendDB
+- **i18n**: i18next (`src/locales/**`) - en, ko, ja
 - **Styling**: Tailwind v4, shadcn/ui
   ```bash
   pnpx shadcn@latest add button

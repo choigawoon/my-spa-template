@@ -384,4 +384,110 @@ export const handlers = [
     const validated = SearchResponseSchema.parse(response)
     return HttpResponse.json(validated)
   }),
+
+  // ==========================================================================
+  // Contents API (for sharing test)
+  // ==========================================================================
+
+  // Contents - List all contents
+  http.get('/api/contents', async ({ request }) => {
+    const url = new URL(request.url)
+    const skip = parseInt(url.searchParams.get('skip') || '0')
+    const limit = parseInt(url.searchParams.get('limit') || '100')
+
+    const contents = await db.contents.toArray()
+    const total = contents.length
+    const paginatedContents = contents.slice(skip, skip + limit)
+
+    return HttpResponse.json({
+      contents: paginatedContents.map((c) => ({ ...c, id: c.id! })),
+      total,
+      skip,
+      limit,
+    })
+  }),
+
+  // Contents - Get by ID or alias
+  http.get('/api/contents/:identifier', async ({ params }) => {
+    const { identifier } = params
+    let content
+
+    // Try to parse as number (ID)
+    const id = parseInt(identifier as string)
+    if (!isNaN(id)) {
+      content = await db.contents.get(id)
+    }
+
+    // If not found by ID, try by alias
+    if (!content) {
+      content = await db.contents.where('alias').equals(identifier as string).first()
+    }
+
+    if (!content) {
+      return httpErrorResponse('Content not found', 404)
+    }
+
+    // Increment view count
+    await db.contents.update(content.id!, {
+      view_count: content.view_count + 1,
+    })
+
+    return HttpResponse.json({ ...content, id: content.id! })
+  }),
+
+  // Contents - Create new content
+  http.post('/api/contents', async ({ request }) => {
+    const body = await request.json()
+
+    const { title, content, author, is_public = true } = body as {
+      title: string
+      content: string
+      author: string
+      is_public?: boolean
+    }
+
+    if (!title || !content || !author) {
+      return httpErrorResponse('Missing required fields: title, content, author', 400)
+    }
+
+    // Generate unique alias
+    const baseAlias = title
+      .toLowerCase()
+      .replace(/[^a-z0-9가-힣]+/g, '-')
+      .replace(/^-|-$/g, '')
+    const timestamp = Date.now().toString(36)
+    const alias = `${baseAlias}-${timestamp}`
+
+    const now = new Date().toISOString()
+
+    const id = (await db.contents.add({
+      alias,
+      title,
+      content,
+      author,
+      is_public,
+      view_count: 0,
+      created_at: now,
+      updated_at: now,
+    })) as number
+
+    const newContent = await db.contents.get(id)
+
+    return HttpResponse.json({ ...newContent, id }, { status: 201 })
+  }),
+
+  // Contents - Delete content
+  http.delete('/api/contents/:id', async ({ params }) => {
+    const { id } = params
+    const contentId = Number(id)
+    const existingContent = await db.contents.get(contentId)
+
+    if (!existingContent) {
+      return httpErrorResponse('Content not found', 404)
+    }
+
+    await db.contents.delete(contentId)
+
+    return HttpResponse.json({ message: 'Content deleted successfully' })
+  }),
 ]

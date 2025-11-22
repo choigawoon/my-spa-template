@@ -5,6 +5,7 @@
     "success": "成功",
     "cancel": "キャンセル",
     "save": "保存",
+    "saving": "保存中...",
     "delete": "削除",
     "edit": "編集",
     "create": "作成",
@@ -27,7 +28,8 @@
     "logout": "ログアウト",
     "login": "ログイン",
     "mswTest": "MSWテスト",
-    "zustandTest": "Zustandテスト"
+    "zustandTest": "Zustandテスト",
+    "dbTest": "DBテスト"
   },
   "pages": {
     "home": {
@@ -206,6 +208,29 @@
         "workHistory": "作業履歴 ({{count}})",
         "duration": "所要時間: {{time}}秒"
       }
+    },
+    "dbTest": {
+      "title": "データベーステスト",
+      "description": "2つのデータベースアーキテクチャをテスト: BackendMockDBはAPIデータ用、FrontendDBはローカルデータ用",
+      "createContent": "共有可能なコンテンツを作成",
+      "titleLabel": "タイトル",
+      "titlePlaceholder": "タイトルを入力",
+      "contentLabel": "コンテンツ",
+      "contentPlaceholder": "ここにコンテンツを入力...",
+      "authorLabel": "作成者",
+      "authorPlaceholder": "お名前",
+      "saveAndShare": "保存して共有URLを取得",
+      "sharedContents": "共有されたコンテンツ",
+      "noContents": "まだコンテンツがありません。上から作成してください！",
+      "by": "作成者:",
+      "view": "表示",
+      "share": "共有",
+      "copied": "コピーしました！",
+      "delete": "削除",
+      "contentNotFound": "コンテンツが見つかりません",
+      "backToList": "リストに戻る",
+      "shareUrl": "URLをコピー",
+      "accessVia": "アクセス方法"
     },
     "notFound": {
       "title": "ページが見つかりません",

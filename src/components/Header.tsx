@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Home, Menu, Database, Server } from 'lucide-react'
+import { Home, Menu, Database, Server, Share2 } from 'lucide-react'
 import LanguageSelector from './LanguageSelector'
 import { Button } from '@/components/ui/button'
 import {
@@ -72,6 +72,18 @@ export default function Header() {
               >
                 <Server size={20} />
                 <span className="font-medium">{t('nav.mswTest')}</span>
+              </Link>
+
+              <Link
+                to="/db-test"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <Share2 size={20} />
+                <span className="font-medium">{t('nav.dbTest')}</span>
               </Link>
               {/* Demo Links End */}
             </nav>

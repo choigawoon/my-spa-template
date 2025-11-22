@@ -1,151 +1,110 @@
 /**
- * IndexedDB Database Configuration
+ * Database Layer Entry Point
  *
- * Uses Dexie.js for IndexedDB wrapper.
- * This provides a mock database for frontend development.
+ * This module provides two separate IndexedDB databases:
+ *
+ * ## 1. Backend Mock Database (BackendMockDB)
+ * - Location: src/db/backend/
+ * - Purpose: Mock backend API data during development
+ * - Used by: MSW handlers
+ * - In production: NOT used (replaced by real backend API)
+ *
+ * ## 2. Frontend Database (FrontendDB)
+ * - Location: src/db/frontend/
+ * - Purpose: Store frontend-only data
+ * - Used by: Components, state management, PWA
+ * - In production: STILL used (persists in browser)
+ *
+ * ## Storage Architecture
+ *
+ * ```
+ * IndexedDB
+ * ├── BackendMockDB          # Mock mode only
+ * │   ├── items              → Backend PostgreSQL
+ * │   └── users              → Backend PostgreSQL
+ * │
+ * └── FrontendDB             # Always used
+ *     ├── settings           # User preferences
+ *     ├── drafts             # Unsaved work
+ *     ├── cache              # Performance cache
+ *     └── recentItems        # View history
+ * ```
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * // Backend mock data (only in mock mode)
+ * import { backendDb, initializeBackendDb } from '@/db'
+ *
+ * // Frontend local data (always available)
+ * import { frontendDb, getSetting, setSetting } from '@/db'
+ * ```
  */
 
-import Dexie, { type EntityTable } from 'dexie'
-
 // =============================================================================
-// Database Entity Types (stored in IndexedDB)
+// Backend Mock Database Exports (for MSW handlers)
 // =============================================================================
 
-export interface ItemEntity {
-  id?: number
-  name: string
-  description: string
-  price: number
-  category: string
-  created_at: string
-  updated_at: string
-}
+export {
+  // Database instance
+  backendDb,
+  db, // Legacy alias
+  BackendMockDatabase,
 
-export interface UserEntity {
-  id?: number
-  email: string
-  username: string
-  full_name: string
-  is_active: boolean
-  created_at: string
-}
+  // Lifecycle functions
+  initializeBackendDb,
+  clearBackendDb,
+  resetBackendDb,
 
-// =============================================================================
-// Database Class
-// =============================================================================
+  // Legacy aliases
+  initializeDatabase,
+  clearDatabase,
+  resetDatabase,
+} from './backend'
 
-export class AppDatabase extends Dexie {
-  items!: EntityTable<ItemEntity, 'id'>
-  users!: EntityTable<UserEntity, 'id'>
-
-  constructor() {
-    super('MermaidChartCloneDB')
-
-    this.version(1).stores({
-      items: '++id, name, category, created_at',
-      users: '++id, email, username, created_at',
-    })
-  }
-}
+// Entity types
+export type { ItemEntity, UserEntity, ContentEntity } from './backend'
 
 // =============================================================================
-// Database Instance
+// Frontend Database Exports (for components & state)
 // =============================================================================
 
-export const db = new AppDatabase()
+export {
+  // Database instance
+  frontendDb,
+  FrontendDatabase,
 
-// =============================================================================
-// Seed Data
-// =============================================================================
+  // Settings helpers
+  getSetting,
+  setSetting,
+  deleteSetting,
 
-const initialItems: Omit<ItemEntity, 'id'>[] = [
-  {
-    name: '노트북',
-    description: '고성능 노트북',
-    price: 1500000,
-    category: '전자제품',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    name: '마우스',
-    description: '무선 마우스',
-    price: 30000,
-    category: '전자제품',
-    created_at: '2024-01-02T00:00:00Z',
-    updated_at: '2024-01-02T00:00:00Z',
-  },
-  {
-    name: '키보드',
-    description: '기계식 키보드',
-    price: 150000,
-    category: '전자제품',
-    created_at: '2024-01-03T00:00:00Z',
-    updated_at: '2024-01-03T00:00:00Z',
-  },
-]
+  // Draft helpers
+  saveDraft,
+  getDraft,
+  deleteDraft,
+  getDraftsByType,
 
-const initialUsers: Omit<UserEntity, 'id'>[] = [
-  {
-    email: 'user1@example.com',
-    username: 'user1',
-    full_name: '홍길동',
-    is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    email: 'user2@example.com',
-    username: 'user2',
-    full_name: '김철수',
-    is_active: true,
-    created_at: '2024-01-02T00:00:00Z',
-  },
-]
+  // Cache helpers
+  getCache,
+  setCache,
+  clearExpiredCache,
+  clearAllCache,
 
-// =============================================================================
-// Database Initialization
-// =============================================================================
+  // Recent items helpers
+  addRecentItem,
+  getRecentItems,
+  clearRecentItems,
 
-/**
- * Initialize the database with seed data if empty
- */
-export async function initializeDatabase(): Promise<void> {
-  try {
-    // Check if items table is empty
-    const itemCount = await db.items.count()
-    if (itemCount === 0) {
-      await db.items.bulkAdd(initialItems)
-      console.log('[IndexedDB] Seeded items table with initial data')
-    }
+  // Lifecycle functions
+  initializeFrontendDb,
+  clearFrontendDb,
+} from './frontend'
 
-    // Check if users table is empty
-    const userCount = await db.users.count()
-    if (userCount === 0) {
-      await db.users.bulkAdd(initialUsers)
-      console.log('[IndexedDB] Seeded users table with initial data')
-    }
-
-    console.log('[IndexedDB] Database initialized successfully')
-  } catch (error) {
-    console.error('[IndexedDB] Failed to initialize database:', error)
-    throw error
-  }
-}
-
-/**
- * Clear all data from the database
- */
-export async function clearDatabase(): Promise<void> {
-  await db.items.clear()
-  await db.users.clear()
-  console.log('[IndexedDB] Database cleared')
-}
-
-/**
- * Reset database to initial state
- */
-export async function resetDatabase(): Promise<void> {
-  await clearDatabase()
-  await initializeDatabase()
-  console.log('[IndexedDB] Database reset to initial state')
-}
+// Entity types
+export type {
+  SettingsEntity,
+  DraftEntity,
+  CacheEntity,
+  RecentItemEntity,
+} from './frontend'

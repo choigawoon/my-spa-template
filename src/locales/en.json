@@ -5,6 +5,7 @@
     "success": "Success",
     "cancel": "Cancel",
     "save": "Save",
+    "saving": "Saving...",
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
@@ -27,7 +28,8 @@
     "logout": "Logout",
     "login": "Login",
     "mswTest": "MSW Test",
-    "zustandTest": "Zustand Test"
+    "zustandTest": "Zustand Test",
+    "dbTest": "DB Test"
   },
   "pages": {
     "home": {
@@ -206,6 +208,29 @@
         "workHistory": "Work History ({{count}})",
         "duration": "Duration: {{time}}s"
       }
+    },
+    "dbTest": {
+      "title": "Database Test",
+      "description": "Test the two-database architecture: BackendMockDB for API data, FrontendDB for local data",
+      "createContent": "Create Shareable Content",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter title",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Enter your content here...",
+      "authorLabel": "Author",
+      "authorPlaceholder": "Your name",
+      "saveAndShare": "Save & Get Share URL",
+      "sharedContents": "Shared Contents",
+      "noContents": "No contents yet. Create one above!",
+      "by": "by",
+      "view": "View",
+      "share": "Share",
+      "copied": "Copied!",
+      "delete": "Delete",
+      "contentNotFound": "Content not found",
+      "backToList": "Back to List",
+      "shareUrl": "Copy URL",
+      "accessVia": "Access via"
     },
     "notFound": {
       "title": "Page Not Found",

@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Development Guide
 
 **Repository**: my-spa-template
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-22
 **Purpose**: Comprehensive guide for AI assistants working on this codebase
 
 ---
@@ -17,15 +17,16 @@
 7. [Routing Patterns](#routing-patterns)
 8. [State Management](#state-management)
 9. [Data Fetching & API Layer](#data-fetching--api-layer)
-10. [API Mocking with MSW](#api-mocking-with-msw)
-11. [IndexedDB with Dexie](#indexeddb-with-dexie)
-12. [Schema Validation with Zod](#schema-validation-with-zod)
-13. [Internationalization (i18n)](#internationalization-i18n)
-14. [PWA Support](#pwa-support)
-15. [Tauri Desktop App](#tauri-desktop-app)
-16. [Testing](#testing)
-17. [Common Tasks](#common-tasks)
-18. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
+10. [Storage Architecture](#storage-architecture)
+11. [API Mocking with MSW](#api-mocking-with-msw)
+12. [IndexedDB Databases](#indexeddb-databases)
+13. [Schema Validation with Zod](#schema-validation-with-zod)
+14. [Internationalization (i18n)](#internationalization-i18n)
+15. [PWA Support](#pwa-support)
+16. [Tauri Desktop App](#tauri-desktop-app)
+17. [Testing](#testing)
+18. [Common Tasks](#common-tasks)
+19. [Important Notes for AI Assistants](#important-notes-for-ai-assistants)
 
 ---
 
@@ -49,10 +50,11 @@ This is a modern React application built with TanStack Router, featuring:
 
 ### Project Status
 
-- **Current Branch**: `claude/claude-md-mi853hhmav0o4u7n-012SaE9nRtNeZNkMYwoHwLEJ`
-- **Git Status**: Clean (no uncommitted changes)
-- **Last Commit**: `17eb898 - Merge pull request #21 (Tauri 2.0 integration)`
-- **Production Ready**: Development environment with full MSW + IndexedDB mocking support
+- **Current Branch**: `claude/separate-db-storage-019pzDmAqkQcjXvSgKPG3o4F`
+- **Git Status**: Active development
+- **Last Feature**: DB test page for content sharing demo
+- **Architecture**: Two-database architecture (BackendMockDB + FrontendDB)
+- **Implemented Features**: i18n (en/ko/ja), PWA, Tauri 2.0, MSW mocking, Zustand state
 
 ---
 
@@ -146,8 +148,15 @@ yarn install # Wrong package manager
 │   │       ├── alert.tsx, badge.tsx, button.tsx, card.tsx
 │   │       ├── dialog.tsx, input.tsx, label.tsx, progress.tsx
 │   │       ├── select.tsx, separator.tsx, sheet.tsx
-│   ├── db/                      # IndexedDB database
-│   │   └── index.ts            # Dexie setup, entities, seed data
+│   ├── db/                      # Database layer (IndexedDB)
+│   │   ├── index.ts            # Entry point (exports both DBs)
+│   │   ├── backend/            # Backend mock DB (replaced in production)
+│   │   │   ├── index.ts        # BackendMockDB class & functions
+│   │   │   ├── entities.ts     # items, users entities
+│   │   │   └── seed.ts         # Development seed data
+│   │   └── frontend/           # Frontend local DB (persists in production)
+│   │       ├── index.ts        # FrontendDB class & helpers
+│   │       └── entities.ts     # settings, drafts, cache entities
 │   ├── hooks/                   # Custom React hooks
 │   │   ├── index.ts            # Re-exports
 │   │   └── usePWA.ts           # PWA installation & update hook
@@ -386,6 +395,69 @@ VITE_API_MODE=real  # Uses actual backend
 
 ---
 
+## Storage Architecture
+
+This project uses **two separate IndexedDB databases** to logically separate backend mock data from frontend-only data.
+
+### Two Database Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    IndexedDB Storage                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  BackendMockDB (src/db/backend/)                            │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ items, users                                          │   │
+│  │ → Used by MSW handlers                                │   │
+│  │ → Replaced by real backend API in production          │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  FrontendDB (src/db/frontend/)                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ settings, drafts, cache, recentItems                  │   │
+│  │ → Used by components & state management               │   │
+│  │ → Persists in browser even in production              │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow by Mode
+
+| Mode | Backend Data | Frontend Data |
+|------|--------------|---------------|
+| **Mock** (`VITE_API_MODE=mock`) | BackendMockDB → MSW | FrontendDB |
+| **Production** (`VITE_API_MODE=real`) | Real API → PostgreSQL | FrontendDB |
+
+### Directory Purpose
+
+| Directory | Database | Purpose | Production |
+|-----------|----------|---------|------------|
+| `src/db/backend/` | BackendMockDB | Mock API data (items, users) | **NOT used** |
+| `src/db/frontend/` | FrontendDB | Local data (settings, drafts) | **Still used** |
+| `src/schemas/` | - | API contracts | Both modes |
+| `src/mocks/` | - | MSW handlers | Mock only |
+
+### Key Design Principles
+
+1. **Logical Separation**: Two IndexedDB databases for different purposes
+2. **Clear Lifecycle**: BackendMockDB is temporary, FrontendDB is permanent
+3. **Easy Transition**: Switch to real backend without losing local data
+4. **Type Safety**: Separate entity types for each database
+
+### Transitioning to Real Backend
+
+When ready to connect to a real backend:
+
+1. Set `VITE_API_MODE=real` in `.env`
+2. Configure `VITE_API_BASE_URL` to point to your backend
+3. `BackendMockDB` is no longer used (can be deleted from IndexedDB)
+4. `FrontendDB` continues working (settings, drafts preserved)
+5. API services automatically connect to real endpoints
+
+---
+
 ## API Mocking with MSW
 
 Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
@@ -404,39 +476,106 @@ Uses MSW + IndexedDB for persistent mock API. Data survives page reloads.
 
 ---
 
-## IndexedDB with Dexie
+## IndexedDB Databases
 
 ### Overview
 
-Uses **Dexie.js** for persistent mock data storage in IndexedDB.
+Uses **Dexie.js** for two separate IndexedDB databases with different lifecycles.
 
-### Database Setup
+### File Structure
 
-```tsx
-// src/db/index.ts
-import { db, initializeDatabase, resetDatabase } from '@/db'
-
-// Query
-const items = await db.items.toArray()
-const item = await db.items.get(1)
-
-// Create
-const id = await db.items.add({ name: 'New Item', ... })
-
-// Update
-await db.items.put({ id: 1, ...updatedData })
-
-// Delete
-await db.items.delete(1)
-
-// Reset to seed data
-await resetDatabase()
+```
+src/db/
+├── index.ts              # Entry point (exports both DBs)
+├── backend/              # Backend mock data (NOT used in production)
+│   ├── index.ts          # BackendMockDB class
+│   ├── entities.ts       # ItemEntity, UserEntity
+│   └── seed.ts           # Development seed data
+└── frontend/             # Frontend local data (ALWAYS used)
+    ├── index.ts          # FrontendDB class & helpers
+    └── entities.ts       # SettingsEntity, DraftEntity, etc.
 ```
 
-### Tables
+---
 
+### BackendMockDB (src/db/backend/)
+
+**Purpose**: Mock backend API data during development
+
+```tsx
+import { backendDb, initializeBackendDb, resetBackendDb } from '@/db'
+
+// Query (used by MSW handlers)
+const items = await backendDb.items.toArray()
+const item = await backendDb.items.get(1)
+
+// Create
+const id = await backendDb.items.add({ name: 'New Item', ... })
+
+// Update
+await backendDb.items.put({ id: 1, ...updatedData })
+
+// Delete
+await backendDb.items.delete(1)
+
+// Reset to seed data
+await resetBackendDb()
+```
+
+**Tables**:
 - **items**: id, name, description, price, category, created_at, updated_at
 - **users**: id, email, username, full_name, is_active, created_at
+
+**Seed Data** (src/db/backend/seed.ts):
+- 3 sample items (노트북, 마우스, 키보드)
+- 2 sample users (홍길동, 김철수)
+
+---
+
+### FrontendDB (src/db/frontend/)
+
+**Purpose**: Store frontend-only data that persists in production
+
+```tsx
+import {
+  frontendDb,
+  getSetting, setSetting,
+  saveDraft, getDraft,
+  setCache, getCache,
+  addRecentItem, getRecentItems
+} from '@/db'
+
+// Settings
+await setSetting('theme', 'dark')
+const theme = await getSetting<string>('theme')
+
+// Drafts
+const draftId = await saveDraft('item', { name: 'Draft Item' }, itemId)
+const draft = await getDraft('item', itemId)
+
+// Cache (with TTL)
+await setCache('searchResults', results, 5 * 60 * 1000) // 5 min
+const cached = await getCache<SearchResults>('searchResults')
+
+// Recent Items
+await addRecentItem('item', 123)
+const recent = await getRecentItems('item', 10)
+```
+
+**Tables**:
+- **settings**: User preferences (theme, language)
+- **drafts**: Unsaved work, offline edits
+- **cache**: Performance optimization cache
+- **recentItems**: Recently viewed items
+
+---
+
+### Usage Summary
+
+| Database | Import | Used By | In Production |
+|----------|--------|---------|---------------|
+| BackendMockDB | `backendDb` | MSW handlers | ❌ Not used |
+| FrontendDB | `frontendDb` | Components, hooks | ✅ Still used |
 
 ---
 
@@ -807,6 +946,16 @@ pnpx shadcn@latest add X  # Add UI component
 ---
 
 ## Changelog
+
+### 2025-11-22
+- **Two-database architecture for logical separation**:
+  - Created `src/db/backend/` for BackendMockDB (API mock data)
+  - Created `src/db/frontend/` for FrontendDB (local persistent data)
+  - BackendMockDB: items, users (replaced by real backend in production)
+  - FrontendDB: settings, drafts, cache, recentItems (persists in production)
+- Added comprehensive Storage Architecture documentation with diagrams
+- Added helper functions for frontend DB (getSetting, saveDraft, setCache, etc.)
+- Clear distinction between temporary mock data and permanent local data
 
 ### 2025-11-21
 - Updated repository name to my-spa-template

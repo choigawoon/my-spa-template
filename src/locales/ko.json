@@ -5,6 +5,7 @@
     "success": "성공",
     "cancel": "취소",
     "save": "저장",
+    "saving": "저장 중...",
     "delete": "삭제",
     "edit": "편집",
     "create": "생성",
@@ -27,7 +28,8 @@
     "logout": "로그아웃",
     "login": "로그인",
     "mswTest": "MSW 테스트",
-    "zustandTest": "Zustand 테스트"
+    "zustandTest": "Zustand 테스트",
+    "dbTest": "DB 테스트"
   },
   "pages": {
     "home": {
@@ -206,6 +208,29 @@
         "workHistory": "작업 기록 ({{count}})",
         "duration": "소요시간: {{time}}초"
       }
+    },
+    "dbTest": {
+      "title": "데이터베이스 테스트",
+      "description": "두 개의 데이터베이스 아키텍처 테스트: BackendMockDB는 API 데이터용, FrontendDB는 로컬 데이터용",
+      "createContent": "공유 가능한 콘텐츠 생성",
+      "titleLabel": "제목",
+      "titlePlaceholder": "제목을 입력하세요",
+      "contentLabel": "내용",
+      "contentPlaceholder": "내용을 입력하세요...",
+      "authorLabel": "작성자",
+      "authorPlaceholder": "이름",
+      "saveAndShare": "저장 및 공유 URL 받기",
+      "sharedContents": "공유된 콘텐츠",
+      "noContents": "아직 콘텐츠가 없습니다. 위에서 생성하세요!",
+      "by": "작성자:",
+      "view": "보기",
+      "share": "공유",
+      "copied": "복사됨!",
+      "delete": "삭제",
+      "contentNotFound": "콘텐츠를 찾을 수 없습니다",
+      "backToList": "목록으로 돌아가기",
+      "shareUrl": "URL 복사",
+      "accessVia": "접근 방법"
     },
     "notFound": {
       "title": "페이지를 찾을 수 없습니다",
