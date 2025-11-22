@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZustandTestRouteImport } from './routes/zustand-test'
 import { Route as MswTestRouteImport } from './routes/msw-test'
-import { Route as DbTestRouteImport } from './routes/db-test'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DbTestIndexRouteImport } from './routes/db-test.index'
 import { Route as DbTestIdRouteImport } from './routes/db-test.$id'
 
 const ZustandTestRoute = ZustandTestRouteImport.update({
@@ -25,63 +25,64 @@ const MswTestRoute = MswTestRouteImport.update({
   path: '/msw-test',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DbTestRoute = DbTestRouteImport.update({
-  id: '/db-test',
-  path: '/db-test',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DbTestIndexRoute = DbTestIndexRouteImport.update({
+  id: '/db-test/',
+  path: '/db-test/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DbTestIdRoute = DbTestIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => DbTestRoute,
+  id: '/db-test/$id',
+  path: '/db-test/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/db-test': typeof DbTestRouteWithChildren
   '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
   '/db-test/$id': typeof DbTestIdRoute
+  '/db-test': typeof DbTestIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/db-test': typeof DbTestRouteWithChildren
   '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
   '/db-test/$id': typeof DbTestIdRoute
+  '/db-test': typeof DbTestIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/db-test': typeof DbTestRouteWithChildren
   '/msw-test': typeof MswTestRoute
   '/zustand-test': typeof ZustandTestRoute
   '/db-test/$id': typeof DbTestIdRoute
+  '/db-test/': typeof DbTestIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/db-test' | '/msw-test' | '/zustand-test' | '/db-test/$id'
+  fullPaths: '/' | '/msw-test' | '/zustand-test' | '/db-test/$id' | '/db-test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/db-test' | '/msw-test' | '/zustand-test' | '/db-test/$id'
+  to: '/' | '/msw-test' | '/zustand-test' | '/db-test/$id' | '/db-test'
   id:
     | '__root__'
     | '/'
-    | '/db-test'
     | '/msw-test'
     | '/zustand-test'
     | '/db-test/$id'
+    | '/db-test/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DbTestRoute: typeof DbTestRouteWithChildren
   MswTestRoute: typeof MswTestRoute
   ZustandTestRoute: typeof ZustandTestRoute
+  DbTestIdRoute: typeof DbTestIdRoute
+  DbTestIndexRoute: typeof DbTestIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -100,13 +101,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MswTestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/db-test': {
-      id: '/db-test'
-      path: '/db-test'
-      fullPath: '/db-test'
-      preLoaderRoute: typeof DbTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -114,32 +108,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/db-test/': {
+      id: '/db-test/'
+      path: '/db-test'
+      fullPath: '/db-test'
+      preLoaderRoute: typeof DbTestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/db-test/$id': {
       id: '/db-test/$id'
-      path: '/$id'
+      path: '/db-test/$id'
       fullPath: '/db-test/$id'
       preLoaderRoute: typeof DbTestIdRouteImport
-      parentRoute: typeof DbTestRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface DbTestRouteChildren {
-  DbTestIdRoute: typeof DbTestIdRoute
-}
-
-const DbTestRouteChildren: DbTestRouteChildren = {
-  DbTestIdRoute: DbTestIdRoute,
-}
-
-const DbTestRouteWithChildren =
-  DbTestRoute._addFileChildren(DbTestRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DbTestRoute: DbTestRouteWithChildren,
   MswTestRoute: MswTestRoute,
   ZustandTestRoute: ZustandTestRoute,
+  DbTestIdRoute: DbTestIdRoute,
+  DbTestIndexRoute: DbTestIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

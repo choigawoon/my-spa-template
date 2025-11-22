@@ -12,7 +12,7 @@ import { apiClient } from '@/api/client'
 import type { ContentEntity } from '@/db'
 import { saveDraft, getDraft, deleteDraft } from '@/db'
 
-export const Route = createFileRoute('/db-test')({
+export const Route = createFileRoute('/db-test/')({
   component: DbTestPage,
 })
 
