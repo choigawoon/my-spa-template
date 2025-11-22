@@ -85,7 +85,7 @@ export async function getSetting<T = unknown>(key: string): Promise<T | undefine
 /**
  * Set a setting value
  */
-export async function setSetting(key: string, value: unknown): Promise<void> {
+export async function setSetting(key: string, value: string | number | boolean | object): Promise<void> {
   const existing = await frontendDb.settings.where('key').equals(key).first()
   const now = new Date().toISOString()
 
@@ -140,13 +140,14 @@ export async function saveDraft(
   }
 
   // Create new draft
-  return await frontendDb.drafts.add({
+  const id = await frontendDb.drafts.add({
     type,
     reference_id: referenceId,
     content,
     created_at: now,
     updated_at: now,
   })
+  return id as number
 }
 
 /**

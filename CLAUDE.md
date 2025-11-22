@@ -51,9 +51,10 @@ This is a modern React application built with TanStack Router, featuring:
 ### Project Status
 
 - **Current Branch**: `claude/separate-db-storage-019pzDmAqkQcjXvSgKPG3o4F`
-- **Git Status**: Clean (no uncommitted changes)
-- **Last Commit**: `85e67cd - Merge pull request #22`
-- **Architecture**: Separated mock DB (browser) from real backend DB for easy transition
+- **Git Status**: Active development
+- **Last Feature**: DB test page for content sharing demo
+- **Architecture**: Two-database architecture (BackendMockDB + FrontendDB)
+- **Implemented Features**: i18n (en/ko/ja), PWA, Tauri 2.0, MSW mocking, Zustand state
 
 ---
 

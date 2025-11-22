@@ -181,7 +181,7 @@ function DbTestPage() {
                 </div>
                 <p className="text-gray-600 mb-3 line-clamp-2">{item.content}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Link to={`/db-test/${item.alias}`}>
+                  <Link to="/db-test/$id" params={{ id: item.alias }}>
                     <Button variant="outline" size="sm" className="flex items-center gap-1">
                       <ExternalLink size={14} />
                       {t('pages.dbTest.view')}
